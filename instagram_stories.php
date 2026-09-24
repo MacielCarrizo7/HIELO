@@ -1,7 +1,7 @@
 <?php
 /**
  * Módulo Generador de Historias para Instagram (Formato Vertical 9:16)
- * Consulta precios y presentaciones de hielo en tiempo real desde Google Firestore.
+ * Conexión en tiempo real con Google Firestore para obtener precios y presentaciones de hielo.
  */
 require_once __DIR__ . "/seguridad.php";
 require_once __DIR__ . "/FirestoreConexion.php";
@@ -52,7 +52,7 @@ try {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,800;0,900;1,900&display=swap" rel="stylesheet">
     
     <!-- html2canvas para renderizar y exportar en PNG HD -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -61,6 +61,7 @@ try {
     <style>
         :root {
             --story-font-heading: 'Outfit', sans-serif;
+            --story-font-impact: 'Montserrat', sans-serif;
             --story-font-body: 'Inter', sans-serif;
         }
 
@@ -79,12 +80,12 @@ try {
         }
 
         .phone-frame {
-            width: 375px;
-            height: 667px;
-            background: #000000;
-            border-radius: 40px;
-            padding: 12px;
-            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255,255,255,0.1);
+            width: 380px;
+            height: 675px;
+            background: #090d16;
+            border-radius: 42px;
+            padding: 10px;
+            box-shadow: 0 25px 60px -15px rgba(2, 132, 199, 0.3), 0 0 0 2px rgba(255,255,255,0.15), inset 0 0 10px rgba(0,0,0,0.8);
             position: relative;
             user-select: none;
         }
@@ -92,17 +93,19 @@ try {
         .phone-screen {
             width: 100%;
             height: 100%;
-            border-radius: 30px;
+            border-radius: 32px;
             overflow: hidden;
             position: relative;
             background: #0f172a;
         }
 
-        /* Lienzo de la Historia (Diseño 9:16) */
+        /* =======================================================
+           LIENZO DE HISTORIA (Proporción exacta 9:16)
+        ======================================================= */
         .story-canvas {
             width: 100%;
             height: 100%;
-            padding: 24px 20px;
+            padding: 20px 18px 16px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -111,141 +114,247 @@ try {
             box-sizing: border-box;
             background-size: cover;
             background-position: center;
-            transition: background 0.3s ease;
+            overflow: hidden;
         }
 
         /* Temas de Fondo */
         .theme-glaciar {
-            background: linear-gradient(165deg, #0284c7 0%, #0369a1 40%, #0f172a 100%);
+            background: radial-gradient(circle at 50% 10%, rgba(56, 189, 248, 0.4) 0%, transparent 60%),
+                        radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.25) 0%, transparent 50%),
+                        linear-gradient(175deg, #034b75 0%, #072a4a 45%, #031526 100%);
         }
         .theme-polar-night {
-            background: linear-gradient(165deg, #0f172a 0%, #1e293b 50%, #082f49 100%);
+            background: radial-gradient(circle at 50% 15%, rgba(125, 211, 252, 0.35) 0%, transparent 55%),
+                        linear-gradient(175deg, #0f172a 0%, #1e293b 40%, #082f49 100%);
         }
         .theme-cyber-ice {
-            background: linear-gradient(165deg, #0284c7 0%, #2563eb 40%, #4338ca 100%);
+            background: radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.45) 0%, transparent 60%),
+                        linear-gradient(175deg, #0284c7 0%, #1d4ed8 45%, #312e81 100%);
         }
         .theme-arctic-frost {
-            background: linear-gradient(165deg, #0284c7 0%, #0ea5e9 30%, #e0f2fe 100%);
+            background: radial-gradient(circle at 50% 10%, rgba(186, 230, 253, 0.6) 0%, transparent 55%),
+                        linear-gradient(175deg, #0284c7 0%, #0369a1 40%, #0c4a6e 100%);
         }
 
-        /* Efectos decorativos de hielo */
+        /* Escarcha y Brillo de Fondo */
+        .frost-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            background-image: 
+                radial-gradient(1.5px 1.5px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 80px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 160px 40px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 240px 120px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 300px 50px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 220px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+                radial-gradient(2.5px 2.5px at 320px 240px, rgba(255,255,255,0.85), rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 100px 340px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 280px 420px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 40px 520px, #ffffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            opacity: 0.65;
+        }
+
+        /* Badge Superior */
         .ice-badge-top {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.2);
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.35);
-            padding: 6px 14px;
+            padding: 4px 12px;
             border-radius: 50px;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 800;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            color: #ffffff;
         }
 
-        .story-title {
-            font-family: var(--story-font-heading);
-            font-size: 1.65rem;
+        /* =======================================================
+           TÍTULO PRINCIPAL 3D CON RELIEVE Y BRILLO
+        ======================================================= */
+        .story-title-3d {
+            font-family: var(--story-font-impact);
+            font-size: 2.1rem;
             font-weight: 900;
-            line-height: 1.1;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            margin: 4px 0 2px 0;
+            text-align: center;
+            background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 35%, #7dd3fc 70%, #0284c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 0px #0284c7) 
+                    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6))
+                    drop-shadow(0 0 12px rgba(56, 189, 248, 0.8));
         }
 
         .story-subtitle {
-            font-size: 0.82rem;
-            opacity: 0.9;
-            font-weight: 500;
-            line-height: 1.35;
+            font-size: 0.75rem;
+            text-align: center;
+            color: #bae6fd;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Tarjeta Glassmorphism de Precios */
-        .story-cards-container {
+        /* =======================================================
+           GRÁFICO CENTRAL: DOS BOLSAS DE HIELO TRANSPARENTES REALES
+        ======================================================= */
+        .ice-bags-stage {
+            position: relative;
+            width: 100%;
+            height: 155px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px 0 6px;
+        }
+
+        .ice-bags-svg-wrapper {
+            width: 100%;
+            max-width: 320px;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+        }
+
+        /* =======================================================
+           RECUADRO DE PRECIOS REALES FIRESTORE (Glassmorphism)
+        ======================================================= */
+        .story-pricing-box {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 16px;
+            padding: 8px 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            margin-bottom: 8px;
+        }
+
+        .story-pricing-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .story-pricing-title {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #7dd3fc;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .story-items-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin: 10px 0;
-            max-height: 340px;
-            overflow-y: hidden;
+            gap: 5px;
+            max-height: 160px;
+            overflow: hidden;
         }
 
-        .story-item-card {
-            background: rgba(255, 255, 255, 0.14);
+        .story-price-row {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .story-price-info {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .story-prod-name {
+            font-family: var(--story-font-heading);
+            font-size: 0.86rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #ffffff;
+        }
+
+        .story-prod-desc {
+            font-size: 0.62rem;
+            color: #bae6fd;
+            font-weight: 500;
+        }
+
+        .story-prod-price {
+            font-family: var(--story-font-impact);
+            font-size: 1.25rem;
+            font-weight: 900;
+            background: linear-gradient(180deg, #ffffff 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            white-space: nowrap;
+        }
+
+        /* =======================================================
+           BANNER FOOTER WHATSAPP & CONTACTO
+        ======================================================= */
+        .story-footer-cta {
+            background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 14px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .story-item-name {
-            font-family: var(--story-font-heading);
-            font-size: 0.95rem;
-            font-weight: 800;
-            line-height: 1.15;
-        }
-
-        .story-item-pres {
-            font-size: 0.72rem;
-            opacity: 0.8;
-        }
-
-        .story-item-price {
-            font-family: var(--story-font-heading);
-            font-size: 1.35rem;
-            font-weight: 900;
-            background: linear-gradient(180deg, #ffffff 0%, #bae6fd 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            white-space: nowrap;
-        }
-
-        /* Banner Inferior WhatsApp */
-        .story-footer-cta {
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 18px;
-            padding: 10px 14px;
+            padding: 8px 10px;
             text-align: center;
         }
 
         .story-whatsapp-btn {
-            background: #22c55e;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
             color: #ffffff;
             font-weight: 800;
-            font-size: 0.88rem;
-            padding: 8px 12px;
-            border-radius: 12px;
+            font-size: 0.82rem;
+            padding: 6px 10px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.45);
+            letter-spacing: 0.02em;
         }
 
         .story-footer-text {
-            font-size: 0.7rem;
-            opacity: 0.85;
-            margin-top: 5px;
+            font-size: 0.64rem;
+            color: #e2e8f0;
+            margin-top: 4px;
+            font-weight: 500;
         }
 
-        /* Control Cards */
+        /* Panel de Controles Laterales */
         .control-section {
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            padding: 24px;
+            padding: 22px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
     </style>
 </head>
@@ -276,40 +385,40 @@ try {
                 
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <div>
-                        <span class="badge text-bg-primary text-uppercase px-3 py-1 mb-1">Marketing & Redes Sociales</span>
-                        <h1 class="h3 fw-bold text-dark mb-0">Generador de Historias para Instagram</h1>
-                        <p class="text-muted small mb-0">Crea gráficas en formato 9:16 con los precios reales sincronizados de Firestore.</p>
+                        <span class="badge text-bg-primary text-uppercase px-3 py-1 mb-1">Marketing Digital 9:16</span>
+                        <h1 class="h3 fw-bold text-dark mb-0">Creador de Historias para Instagram</h1>
+                        <p class="text-muted small mb-0">Flyers publicitarios con efecto relieve 3D, dos bolsas de hielo y precios en vivo de Firestore.</p>
                     </div>
                 </div>
 
-                <!-- 1. Selección de Plantilla y Tema -->
+                <!-- 1. Selección de Estilo y Tema -->
                 <div class="control-section">
                     <h2 class="h6 fw-bold text-primary mb-3">
-                        <i class="bi bi-palette-fill me-2"></i> 1. Plantilla y Estilo Visual
+                        <i class="bi bi-palette-fill me-2"></i> 1. Estilo Visual y Fondo Helado
                     </h2>
                     
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3">
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold">Tipo de Publicación</label>
+                            <label class="form-label small fw-bold">Plantilla de Campaña</label>
                             <select id="controlTipoPlantilla" class="form-select">
-                                <option value="lista" selected>📋 Lista de Precios de Fábrica</option>
-                                <option value="oferta">⭐ Producto Estrella / Oferta Flash</option>
-                                <option value="mayorista">🚚 Venta Mayorista y Eventos</option>
+                                <option value="general" selected>🧊 Fábrica de Hielo / Lista de Precios</option>
+                                <option value="oferta">🔥 Oferta Flash / Super Precio</option>
+                                <option value="mayorista">🚚 Envíos Mayoristas a Comercios</option>
                             </select>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold">Tema de Fondo</label>
                             <select id="controlTemaFondo" class="form-select">
-                                <option value="theme-glaciar" selected>🧊 Azul Glaciar (Estándar)</option>
+                                <option value="theme-glaciar" selected>❄️ Azul Glaciar Luminoso</option>
                                 <option value="theme-polar-night">🌌 Noche Polar Profunda</option>
                                 <option value="theme-cyber-ice">⚡ Cyber Ice Neón</option>
-                                <option value="theme-arctic-frost">❄️ Escarcha Ártica</option>
+                                <option value="theme-arctic-frost">🏔️ Escarcha Ártica</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. Personalización de Textos -->
+                <!-- 2. Textos Publicitarios -->
                 <div class="control-section">
                     <h2 class="h6 fw-bold text-primary mb-3">
                         <i class="bi bi-fonts me-2"></i> 2. Textos y Llamados a la Acción
@@ -318,22 +427,22 @@ try {
                     <div class="row g-3">
                         <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold">Badge Superior</label>
-                            <input type="text" id="controlBadge" class="form-control" value="❄️ ¡PRECIOS DE FÁBRICA!">
+                            <input type="text" id="controlBadge" class="form-control" value="❄️ FÁBRICA DIRECTA">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold">Título de la Historia</label>
-                            <input type="text" id="controlTitulo" class="form-control" value="BOLSAS DE HIELO">
+                            <label class="form-label small fw-bold">Título 3D en Relieve</label>
+                            <input type="text" id="controlTitulo" class="form-control" value="HIELO EN CUBOS">
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Bajada / Descripción</label>
-                            <input type="text" id="controlSubtitulo" class="form-control" value="Rolitos 100% puros y cristalinos • Venta Mayorista y Minorista">
+                            <label class="form-label small fw-bold">Subtítulo / Bajada</label>
+                            <input type="text" id="controlSubtitulo" class="form-control" value="100% Agua Filtrada y Cristalina • Máxima Duración">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold">WhatsApp de Pedidos</label>
+                            <label class="form-label small fw-bold">Número de WhatsApp</label>
                             <input type="text" id="controlWhatsapp" class="form-control" value="+54 9 11 4567-8900">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold">Texto Pie / Ubicación</label>
+                            <label class="form-label small fw-bold">Texto Pie / Envíos</label>
                             <input type="text" id="controlUbicacion" class="form-control" value="Envíos a Kioscos, Bares y Eventos • Planta Central">
                         </div>
                     </div>
@@ -345,33 +454,33 @@ try {
                         <h2 class="h6 fw-bold text-primary mb-0">
                             <i class="bi bi-currency-dollar me-2"></i> 3. Precios Actuales de Firestore
                         </h2>
-                        <span class="badge text-bg-light border text-muted">Sincronizado</span>
+                        <span class="badge text-bg-success bg-opacity-75 text-white">Base de Datos Conectada</span>
                     </div>
 
                     <p class="small text-muted mb-3">
-                        Seleccioná qué presentaciones de hielo querés incluir en la historia (máximo 5 para legibilidad perfecta en Instagram).
+                        Marcá las presentaciones de hielo que deseas mostrar en el flyer (los precios se actualizan automáticamente):
                     </p>
 
                     <div class="table-responsive border rounded bg-light p-2">
                         <table class="table table-hover table-sm align-middle mb-0">
                             <thead class="small text-muted">
                                 <tr>
-                                    <th style="width: 40px;" class="text-center">Mostrar</th>
-                                    <th>Presentación / Bolsa</th>
+                                    <th style="width: 45px;" class="text-center">Ver</th>
+                                    <th>Presentación / Producto</th>
                                     <th>Precio Base Firestore</th>
-                                    <th>Precio en Story ($)</th>
+                                    <th style="width: 130px;">Precio Story ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosStories">
                                 <?php if (empty($productosFirestore)): ?>
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-3">No hay productos registrados en Firestore.</td>
+                                        <td colspan="4" class="text-center text-muted py-3">No hay productos cargados en Firestore.</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($productosFirestore as $idx => $p): ?>
                                         <tr>
                                             <td class="text-center">
-                                                <input class="form-check-input check-prod-story" type="checkbox" value="<?= $p['id'] ?>" <?= $idx < 4 ? 'checked' : '' ?> data-id="<?= $p['id'] ?>">
+                                                <input class="form-check-input check-prod-story" type="checkbox" value="<?= $p['id'] ?>" <?= $idx < 3 ? 'checked' : '' ?> data-id="<?= $p['id'] ?>">
                                             </td>
                                             <td>
                                                 <strong class="small text-dark"><?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
@@ -381,7 +490,7 @@ try {
                                                 $ <?= number_format($p['precio'], 2, ',', '.') ?>
                                             </td>
                                             <td>
-                                                <input type="number" step="1" class="form-control form-control-sm input-precio-story" style="max-width: 120px;" value="<?= (int)$p['precio'] ?>" data-id="<?= $p['id'] ?>" data-nombre="<?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?>" data-pres="<?= htmlspecialchars($p['presentacion'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="number" step="1" class="form-control form-control-sm input-precio-story font-monospace fw-bold text-end" value="<?= (int)$p['precio'] ?>" data-id="<?= $p['id'] ?>" data-nombre="<?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?>" data-pres="<?= htmlspecialchars($p['presentacion'], ENT_QUOTES, 'UTF-8') ?>">
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -393,7 +502,7 @@ try {
 
             </div>
 
-            <!-- Columna Derecha: Vista Previa y Botón de Descarga -->
+            <!-- Columna Derecha: Vista Previa y Botón de Descarga HD -->
             <div class="col-12 col-xl-5">
                 
                 <div class="phone-mockup-wrapper">
@@ -404,37 +513,228 @@ try {
                             <div class="phone-screen">
                                 <div id="storyCanvasExport" class="story-canvas theme-glaciar">
                                     
+                                    <!-- Escarcha de fondo -->
+                                    <div class="frost-overlay"></div>
+
                                     <!-- Header de la Historia -->
-                                    <div>
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div style="position: relative; z-index: 2;">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="ice-badge-top" id="storyPreviewBadge">
-                                                ❄️ ¡PRECIOS DE FÁBRICA!
+                                                ❄️ FÁBRICA DIRECTA
                                             </span>
-                                            <div class="text-white-50 small" style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">
-                                                DISTRIBUIDORA
+                                            <div class="text-white-50 small" style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em;">
+                                                PREMIUM ICE
                                             </div>
                                         </div>
 
-                                        <h2 class="story-title text-white mb-1" id="storyPreviewTitulo">
-                                            BOLSAS DE HIELO
+                                        <h2 class="story-title-3d" id="storyPreviewTitulo">
+                                            HIELO EN CUBOS
                                         </h2>
-                                        <p class="story-subtitle text-white-50 mb-0" id="storyPreviewSubtitulo">
-                                            Rolitos 100% puros y cristalinos • Venta Mayorista y Minorista
+                                        <p class="story-subtitle" id="storyPreviewSubtitulo">
+                                            100% Agua Filtrada y Cristalina • Máxima Duración
                                         </p>
                                     </div>
 
-                                    <!-- Lista de Tarjetas de Productos y Precios -->
-                                    <div class="story-cards-container" id="storyPreviewProductosContainer">
-                                        <!-- Render dinámico de productos -->
+                                    <!-- Gráfico Central: 2 Bolsas de Hielo Transparentes y Reales llenas de cubos -->
+                                    <div class="ice-bags-stage" style="position: relative; z-index: 2;">
+                                        <div class="ice-bags-svg-wrapper">
+                                            <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                                                <defs>
+                                                    <!-- Gradientes de Bolsas Transparentes -->
+                                                    <linearGradient id="bagGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+                                                        <stop offset="30%" stop-color="#7dd3fc" stop-opacity="0.2"/>
+                                                        <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.15"/>
+                                                        <stop offset="100%" stop-color="#0284c7" stop-opacity="0.35"/>
+                                                    </linearGradient>
+                                                    <linearGradient id="bagGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
+                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+                                                        <stop offset="40%" stop-color="#bae6fd" stop-opacity="0.25"/>
+                                                        <stop offset="80%" stop-color="#0ea5e9" stop-opacity="0.2"/>
+                                                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.4"/>
+                                                    </linearGradient>
+                                                    
+                                                    <!-- Gradiente Cubos de Hielo -->
+                                                    <linearGradient id="iceCubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                                                        <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.7"/>
+                                                    </linearGradient>
+                                                    <linearGradient id="iceCubeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.8"/>
+                                                        <stop offset="100%" stop-color="#0284c7" stop-opacity="0.9"/>
+                                                    </linearGradient>
+                                                    <linearGradient id="iceCubeRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
+                                                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.95"/>
+                                                    </linearGradient>
+                                                    
+                                                    <!-- Filtro de Resplandor Frío -->
+                                                    <filter id="iceGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                                        <feGaussianBlur stdDeviation="3" result="blur"/>
+                                                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                                                    </filter>
+                                                </defs>
+
+                                                <!-- Sombra / Resplandor Base en el suelo -->
+                                                <ellipse cx="200" cy="185" rx="160" ry="12" fill="#000000" opacity="0.45" />
+                                                <ellipse cx="200" cy="183" rx="130" ry="8" fill="#38bdf8" opacity="0.25" />
+
+                                                <!-- ==========================================
+                                                     BOLSA IZQUIERDA (Bolsa de Hielo 1)
+                                                =========================================== -->
+                                                <g transform="translate(60, 15) rotate(-6, 80, 90)">
+                                                    <!-- Cuerpo de la Bolsa -->
+                                                    <path d="M 30,35 C 45,30 115,30 130,35 C 145,55 150,135 140,165 C 130,175 30,175 20,165 C 10,135 15,55 30,35 Z" 
+                                                          fill="url(#bagGradLeft)" stroke="rgba(255,255,255,0.7)" stroke-width="2" />
+
+                                                    <!-- Cubos de Hielo dentro de la Bolsa 1 -->
+                                                    <!-- Fila Inferior de Cubos -->
+                                                    <g transform="translate(32, 115) scale(0.65)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(62, 118) scale(0.68)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(92, 112) scale(0.65)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <!-- Fila Media de Cubos -->
+                                                    <g transform="translate(42, 85) scale(0.7)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(75, 82) scale(0.72)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <!-- Fila Superior de Cubos -->
+                                                    <g transform="translate(58, 52) scale(0.68)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+
+                                                    <!-- Brillo y Pliegues de la Bolsa 1 -->
+                                                    <path d="M 28,45 C 50,70 40,140 32,158" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.6" fill="none"/>
+                                                    <path d="M 125,50 C 130,90 120,135 128,155" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.5" fill="none"/>
+                                                    
+                                                    <!-- Fruncido / Cierre Superior de la Bolsa -->
+                                                    <path d="M 68,32 C 60,15 55,5 80,4 C 105,5 100,15 92,32 Z" fill="url(#bagGradLeft)" stroke="#ffffff" stroke-width="1.5"/>
+                                                    <ellipse cx="80" cy="30" rx="14" ry="4" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+
+                                                    <!-- Etiqueta Helada en la Bolsa -->
+                                                    <rect x="45" y="100" width="70" height="26" rx="5" fill="#0369a1" fill-opacity="0.85" stroke="#bae6fd" stroke-width="1"/>
+                                                    <text x="80" y="117" font-family="'Outfit', sans-serif" font-size="11" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">HIELO</text>
+                                                </g>
+
+                                                <!-- ==========================================
+                                                     BOLSA DERECHA (Bolsa de Hielo 2)
+                                                =========================================== -->
+                                                <g transform="translate(180, 10) rotate(5, 80, 95)">
+                                                    <!-- Cuerpo de la Bolsa 2 -->
+                                                    <path d="M 30,35 C 45,28 120,28 135,35 C 150,55 155,140 142,170 C 130,178 30,178 18,170 C 8,140 15,55 30,35 Z" 
+                                                          fill="url(#bagGradRight)" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" />
+
+                                                    <!-- Cubos de Hielo dentro de la Bolsa 2 -->
+                                                    <!-- Fila Inferior -->
+                                                    <g transform="translate(30, 118) scale(0.7)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(62, 122) scale(0.72)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(95, 115) scale(0.68)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <!-- Fila Media -->
+                                                    <g transform="translate(45, 86) scale(0.74)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <g transform="translate(78, 84) scale(0.74)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+                                                    <!-- Fila Superior -->
+                                                    <g transform="translate(60, 52) scale(0.72)">
+                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                    </g>
+
+                                                    <!-- Brillo y Reflejos Plásticos Bolsa 2 -->
+                                                    <path d="M 28,45 C 55,75 42,145 32,165" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.75" fill="none"/>
+                                                    <path d="M 132,50 C 135,95 125,140 132,160" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6" fill="none"/>
+                                                    
+                                                    <!-- Fruncido / Cierre Superior Bolsa 2 -->
+                                                    <path d="M 70,30 C 62,12 58,2 84,2 C 110,2 105,12 96,30 Z" fill="url(#bagGradRight)" stroke="#ffffff" stroke-width="1.5"/>
+                                                    <ellipse cx="83" cy="28" rx="15" ry="4" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+
+                                                    <!-- Etiqueta Helada en la Bolsa 2 -->
+                                                    <rect x="48" y="100" width="72" height="28" rx="5" fill="#0284c7" fill-opacity="0.9" stroke="#ffffff" stroke-width="1.2"/>
+                                                    <text x="84" y="118" font-family="'Outfit', sans-serif" font-size="11.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">ROLITOS</text>
+                                                </g>
+
+                                                <!-- Cubos de Hielo Flotando Sueltos en la Base -->
+                                                <g transform="translate(185, 155) scale(0.55)">
+                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                </g>
+                                                <g transform="translate(45, 155) rotate(15) scale(0.5)">
+                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                </g>
+                                                <g transform="translate(325, 150) rotate(-20) scale(0.52)">
+                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
+                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
+                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <!-- Recuadro Moderno de Precios Reales (Firestore) -->
+                                    <div class="story-pricing-box" style="position: relative; z-index: 2;">
+                                        <div class="story-pricing-header">
+                                            <span class="story-pricing-title">
+                                                <i class="bi bi-tag-fill"></i> Precios Actualizados
+                                            </span>
+                                            <span class="badge text-bg-info bg-opacity-25 text-info border border-info border-opacity-50" style="font-size: 0.58rem; font-weight: 700;">
+                                                DIRECTO DE FÁBRICA
+                                            </span>
+                                        </div>
+
+                                        <!-- Contenedor Dinámico de Filas de Precios -->
+                                        <div class="story-items-list" id="storyPreviewProductosContainer">
+                                            <!-- Render dinámico desde JS -->
+                                        </div>
                                     </div>
 
                                     <!-- Footer con WhatsApp y Contacto -->
-                                    <div class="story-footer-cta">
-                                        <div class="story-whatsapp-btn mb-1">
+                                    <div class="story-footer-cta" style="position: relative; z-index: 2;">
+                                        <div class="story-whatsapp-btn">
                                             <i class="bi bi-whatsapp fs-6"></i>
                                             <span id="storyPreviewWhatsapp">PEDIDOS: +54 9 11 4567-8900</span>
                                         </div>
-                                        <div class="story-footer-text text-white-50" id="storyPreviewUbicacion">
+                                        <div class="story-footer-text" id="storyPreviewUbicacion">
                                             Envíos a Kioscos, Bares y Eventos • Planta Central
                                         </div>
                                     </div>
@@ -443,13 +743,13 @@ try {
                             </div>
                         </div>
 
-                        <!-- Botones de Descarga y Compartir -->
-                        <div class="d-flex flex-column gap-2 w-100" style="max-width: 375px;">
-                            <button type="button" class="btn btn-success btn-lg fw-bold shadow" id="btnDescargarHistoriaPng">
-                                <i class="bi bi-download me-2"></i> Descargar Historia PNG
+                        <!-- Botones de Acción -->
+                        <div class="d-flex flex-column gap-2 w-100" style="max-width: 380px;">
+                            <button type="button" class="btn btn-success btn-lg fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDescargarHistoriaPng">
+                                <i class="bi bi-cloud-arrow-down-fill fs-5"></i> Descargar Historia PNG HD
                             </button>
                             <button type="button" class="btn btn-outline-dark fw-semibold" id="btnCopiarCaption">
-                                <i class="bi bi-card-text me-2"></i> Copiar Texto / Caption para Instagram
+                                <i class="bi bi-card-text me-1"></i> Copiar Texto / Caption para Instagram
                             </button>
                         </div>
 
@@ -485,17 +785,17 @@ try {
         const previewContainerProds = document.getElementById("storyPreviewProductosContainer");
 
         function actualizarStory() {
-            // 1. Tema
+            // 1. Tema de fondo
             canvasStory.className = `story-canvas ${selectTema.value}`;
 
             // 2. Textos
-            previewBadge.textContent = inputBadge.value || "❄️ FÁBRICA DE HIELO";
-            previewTitulo.textContent = inputTitulo.value || "BOLSAS DE HIELO";
-            previewSubtitulo.textContent = inputSubtitulo.value || "Calidad y Pureza Garantizada";
+            previewBadge.textContent = inputBadge.value || "❄️ FÁBRICA DIRECTA";
+            previewTitulo.textContent = inputTitulo.value || "HIELO EN CUBOS";
+            previewSubtitulo.textContent = inputSubtitulo.value || "100% Agua Filtrada y Cristalina • Máxima Duración";
             previewWhatsapp.textContent = `PEDIDOS: ${inputWhatsapp.value || '+54 9 11 0000-0000'}`;
-            previewUbicacion.textContent = inputUbicacion.value || "Reparto Directo a Comercios";
+            previewUbicacion.textContent = inputUbicacion.value || "Envíos a Kioscos, Bares y Eventos • Planta Central";
 
-            // 3. Productos seleccionados
+            // 3. Renderizar Productos y Precios
             const checkboxes = document.querySelectorAll(".check-prod-story:checked");
             previewContainerProds.innerHTML = "";
 
@@ -503,50 +803,57 @@ try {
 
             if (checkboxes.length === 0) {
                 previewContainerProds.innerHTML = `
-                    <div class="p-3 text-center bg-white bg-opacity-10 rounded-3 small">
-                        Seleccioná productos en la tabla para visualizarlos en la historia.
+                    <div class="p-2 text-center bg-white bg-opacity-10 rounded-2 text-white-50" style="font-size: 0.72rem;">
+                        Seleccioná productos de la tabla para mostrarlos aquí.
                     </div>
                 `;
                 return;
             }
 
+            // Mostrar hasta un máximo de 3-4 productos para ajuste visual perfecto
             checkboxes.forEach((chk, index) => {
+                if (index >= 4) return;
                 const id = chk.value;
                 const inputPrecio = document.querySelector(`.input-precio-story[data-id="${id}"]`);
                 const nombre = inputPrecio ? inputPrecio.dataset.nombre : "Bolsa de Hielo";
                 const pres = inputPrecio ? inputPrecio.dataset.pres : "unidad";
                 const precioNum = inputPrecio ? parseFloat(inputPrecio.value) || 0 : 0;
 
-                const card = document.createElement("div");
-                card.className = "story-item-card";
+                const row = document.createElement("div");
+                row.className = "story-price-row";
 
                 if (plantilla === "oferta" && index === 0) {
-                    card.style.background = "rgba(255, 255, 255, 0.25)";
-                    card.style.border = "2px solid #38bdf8";
-                    card.style.padding = "14px";
-                    card.innerHTML = `
-                        <div>
-                            <span class="badge bg-warning text-dark fw-bold mb-1">⭐ PROMO DESTACADA</span>
-                            <div class="story-item-name fs-5">${nombre}</div>
-                            <div class="story-item-pres">Bolsa individual de máxima pureza</div>
+                    row.style.background = "linear-gradient(90deg, rgba(245, 158, 11, 0.3) 0%, rgba(255, 255, 255, 0.15) 100%)";
+                    row.style.borderColor = "#f59e0b";
+                    row.innerHTML = `
+                        <div class="story-price-info">
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="badge bg-warning text-dark p-1" style="font-size: 0.55rem; font-weight: 800;">OFERTA</span>
+                                <span class="story-prod-name">${nombre}</span>
+                            </div>
+                            <span class="story-prod-desc">Bolsa cristalina pura • ¡Súper Promo!</span>
                         </div>
-                        <div class="story-item-price fs-2">${formatoMoneda.format(precioNum)}</div>
+                        <div class="story-prod-price text-warning">${formatoMoneda.format(precioNum)}</div>
                     `;
                 } else {
-                    card.innerHTML = `
-                        <div>
-                            <div class="story-item-name">${nombre}</div>
-                            <div class="story-item-pres">${pres === 'caja' ? 'Caja cerrada' : pres === 'bulto' ? 'Pack / Bulto' : 'Bolsa individual'}</div>
+                    let detallePres = "Bolsa individual";
+                    if (pres === "caja") detallePres = "Caja cerrada";
+                    else if (pres === "bulto") detallePres = "Pack / Bulto cerrado";
+
+                    row.innerHTML = `
+                        <div class="story-price-info">
+                            <span class="story-prod-name">${nombre}</span>
+                            <span class="story-prod-desc">${detallePres}</span>
                         </div>
-                        <div class="story-item-price">${formatoMoneda.format(precioNum)}</div>
+                        <div class="story-prod-price">${formatoMoneda.format(precioNum)}</div>
                     `;
                 }
 
-                previewContainerProds.appendChild(card);
+                previewContainerProds.appendChild(row);
             });
         }
 
-        // Listeners de actualización en tiempo real
+        // Listeners en tiempo real
         [selectTema, inputBadge, inputTitulo, inputSubtitulo, inputWhatsapp, inputUbicacion, selectTipoPlantilla].forEach(el => {
             if (el) {
                 el.addEventListener("input", actualizarStory);
@@ -559,36 +866,36 @@ try {
             el.addEventListener("change", actualizarStory);
         });
 
-        // Cambiar plantilla con valores predeterminados
+        // Cambiar plantilla con valores predeterminados de marketing
         selectTipoPlantilla.addEventListener("change", () => {
             const p = selectTipoPlantilla.value;
             if (p === "oferta") {
-                inputBadge.value = "🔥 ¡OFERTA FLASH EN HIELO!";
+                inputBadge.value = "🔥 ¡SUPER OFERTA FLASH!";
                 inputTitulo.value = "PROMO DEL DÍA";
-                inputSubtitulo.value = "Aprovechá nuestros precios especiales por tiempo limitado.";
+                inputSubtitulo.value = "Precios especiales en bolsas de hielo por tiempo limitado";
             } else if (p === "mayorista") {
                 inputBadge.value = "🚚 REPARTO MAYORISTA";
                 inputTitulo.value = "PROVEEDOR DE HIELO";
-                inputSubtitulo.value = "Abastecimiento constante a Kioscos, Bares, Eventos y Gastronomía.";
+                inputSubtitulo.value = "Abastecimiento constante a Kioscos, Bares y Gastronomía";
             } else {
-                inputBadge.value = "❄️ ¡PRECIOS DE FÁBRICA!";
-                inputTitulo.value = "BOLSAS DE HIELO";
-                inputSubtitulo.value = "Rolitos 100% puros y cristalinos • Venta Mayorista y Minorista";
+                inputBadge.value = "❄️ FÁBRICA DIRECTA";
+                inputTitulo.value = "HIELO EN CUBOS";
+                inputSubtitulo.value = "100% Agua Filtrada y Cristalina • Máxima Duración";
             }
             actualizarStory();
         });
 
-        // 4. Descargar Historia en Formato PNG 1080x1920
+        // 4. Descargar Historia en Formato PNG Alta Resolución (1080x1920)
         document.getElementById("btnDescargarHistoriaPng").addEventListener("click", async () => {
             const btn = document.getElementById("btnDescargarHistoriaPng");
             const textoOriginal = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Generando imagen HD...`;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Generando PNG HD...`;
 
             try {
                 const elemento = document.getElementById("storyCanvasExport");
                 
-                // Renderizar con html2canvas en alta definición (escala 3x para 1080x1920 nítido)
+                // Renderizar con html2canvas en ultra alta definición (escala 3x para 1080x1920 nítido)
                 const canvas = await html2canvas(elemento, {
                     scale: 3,
                     useCORS: true,
@@ -626,23 +933,23 @@ try {
             });
 
             const caption = 
-                `❄️ *${inputTitulo.value.toUpperCase()} - LISTA DE PRECIOS* ❄️\n\n` +
+                `❄️ *${inputTitulo.value.toUpperCase()} - PRECIOS DE FÁBRICA* ❄️\n\n` +
                 `${inputSubtitulo.value}\n\n` +
                 `📋 *Precios vigentes:*\n` +
                 `${listaPrecios}\n` +
                 `🚚 *Reparto y Pedidos:* ${inputWhatsapp.value}\n` +
                 `📍 ${inputUbicacion.value}\n\n` +
-                `#Hielo #FabricaDeHielo #Rolitos #BolsasDeHielo #Bebidas #Eventos #Gastronomia`;
+                `#Hielo #FabricaDeHielo #Rolitos #BolsasDeHielo #Bebidas #Eventos #Gastronomia #Verano`;
 
             try {
                 await navigator.clipboard.writeText(caption);
-                alert("¡Texto y pie de foto copiado al portapapeles listo para Instagram!");
+                alert("¡Texto y pie de foto copiado al portapapeles listo para pegar en Instagram!");
             } catch {
                 prompt("Copia el siguiente texto:", caption);
             }
         });
 
-        // Inicializar
+        // Inicializar al cargar
         document.addEventListener("DOMContentLoaded", actualizarStory);
     </script>
 </body>

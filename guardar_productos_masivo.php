@@ -74,10 +74,10 @@ try {
 
         $vencimientoParam = ($fechaVencimiento !== "" && fechaIsoValida($fechaVencimiento)) ? $fechaVencimiento : null;
         
-        // Generar código de barras si viene vacío (Inicia obligatoriamente con el dígito 2)
+        // Generar código de barras si viene vacío (Inicia obligatoriamente con el prefijo 20)
         if ($codigoBarras === "") {
-            $primeros12 = "2";
-            for ($i = 0; $i < 11; $i++) {
+            $primeros12 = "20";
+            for ($i = 0; $i < 10; $i++) {
                 $primeros12 .= (string)random_int(0, 9);
             }
             $suma = 0;

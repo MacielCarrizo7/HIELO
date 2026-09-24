@@ -1176,9 +1176,9 @@ if (barcodeSelector) {
 });
 
 function generarCodigoEan13() {
-    // Comienza obligatoriamente con el dígito "2" seguido de 11 dígitos aleatorios y dígito de control EAN-13
-    let primeros12 = "2";
-    for (let i = 0; i < 11; i++) {
+    // Comienza obligatoriamente y sin excepciones con el prefijo "20" (código interno) seguido de 10 dígitos aleatorios y dígito de control EAN-13
+    let primeros12 = "20";
+    for (let i = 0; i < 10; i++) {
         primeros12 += Math.floor(Math.random() * 10).toString();
     }
     let suma = 0;

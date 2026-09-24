@@ -510,8 +510,8 @@ $csrf = tokenCsrf();
             });
 
             document.getElementById("btnGenerarCb").addEventListener("click", () => {
-                let primeros12 = "2";
-                for (let i = 0; i < 11; i++) {
+                let primeros12 = "20";
+                for (let i = 0; i < 10; i++) {
                     primeros12 += Math.floor(Math.random() * 10).toString();
                 }
                 let suma = 0;
@@ -662,8 +662,8 @@ $csrf = tokenCsrf();
 
                 const inputCb = tr.querySelector(".masivo-cb");
                 tr.querySelector(".btn-gen-cb").addEventListener("click", () => {
-                    let primeros12 = "2";
-                    for (let i = 0; i < 11; i++) {
+                    let primeros12 = "20";
+                    for (let i = 0; i < 10; i++) {
                         primeros12 += Math.floor(Math.random() * 10).toString();
                     }
                     let suma = 0;
