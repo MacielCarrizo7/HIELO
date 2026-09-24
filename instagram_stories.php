@@ -245,30 +245,31 @@ try {
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
         }
 
-        /* Etiqueta VENTA POR MAYOR */
-        .badge-mayorista-story {
+        /* Etiqueta VENTA POR MAYOR / Badge Destacado en Header */
+        .badge-mayorista-pill {
             background: #dc2626;
             color: #ffffff;
             font-family: var(--story-font-heading);
-            font-size: 0.60rem;
+            font-size: 0.65rem;
             font-weight: 900;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
-            padding: 3px 8px;
-            border-radius: 6px;
+            padding: 3px 10px;
+            border-radius: 50px;
             border: 1px solid #ef4444;
             box-shadow: none;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            line-height: 1;
+            gap: 4px;
+            line-height: 1.2;
         }
 
         .story-items-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            max-height: 160px;
+            gap: 6px;
+            max-height: 165px;
             overflow: hidden;
         }
 
@@ -276,7 +277,7 @@ try {
             background: #0f1e33;
             border: 1px solid #1e3a5f;
             border-radius: 10px;
-            padding: 5px 10px;
+            padding: 6px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -287,13 +288,14 @@ try {
             display: flex;
             flex-direction: column;
             text-align: left;
+            gap: 1px;
         }
 
         .story-prod-name {
             font-family: var(--story-font-heading);
-            font-size: 0.88rem;
+            font-size: 0.90rem;
             font-weight: 800;
-            line-height: 1.1;
+            line-height: 1.15;
             color: #ffffff;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
         }
@@ -307,11 +309,12 @@ try {
 
         .story-prod-price {
             font-family: var(--story-font-impact);
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             font-weight: 900;
             color: #38bdf8;
             text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(56, 189, 248, 0.5);
             white-space: nowrap;
+            text-align: right;
         }
 
         /* =======================================================
@@ -440,10 +443,14 @@ try {
                             <input type="text" id="controlSubtitulo" class="form-control" value="100% Agua Filtrada y Cristalina • Máxima Duración">
                         </div>
                         <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-bold">Etiqueta Destacada (Arriba de Precios)</label>
+                            <input type="text" id="controlBadgeMayorista" class="form-control" value="🚚 VENTA POR MAYOR">
+                        </div>
+                        <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold">Número de WhatsApp</label>
                             <input type="text" id="controlWhatsapp" class="form-control" value="+54 9 11 4567-8900">
                         </div>
-                        <div class="col-12 col-sm-6">
+                        <div class="col-12">
                             <label class="form-label small fw-bold">Texto Pie / Envíos</label>
                             <input type="text" id="controlUbicacion" class="form-control" value="Envíos a Kioscos, Bares y Eventos • Planta Central">
                         </div>
@@ -551,6 +558,9 @@ try {
                                             <span class="story-pricing-title">
                                                 <i class="bi bi-tag-fill"></i> Precios Actualizados
                                             </span>
+                                            <span class="badge-mayorista-pill" id="storyPreviewBadgeMayorista">
+                                                🚚 VENTA POR MAYOR
+                                            </span>
                                         </div>
 
                                         <!-- Contenedor Dinámico de Filas de Precios -->
@@ -638,6 +648,7 @@ try {
         const inputBadge = document.getElementById("controlBadge");
         const inputTitulo = document.getElementById("controlTitulo");
         const inputSubtitulo = document.getElementById("controlSubtitulo");
+        const inputBadgeMayorista = document.getElementById("controlBadgeMayorista");
         const inputWhatsapp = document.getElementById("controlWhatsapp");
         const inputUbicacion = document.getElementById("controlUbicacion");
         const selectTipoPlantilla = document.getElementById("controlTipoPlantilla");
@@ -647,6 +658,7 @@ try {
         const previewBadge = document.getElementById("storyPreviewBadge");
         const previewTitulo = document.getElementById("storyPreviewTitulo");
         const previewSubtitulo = document.getElementById("storyPreviewSubtitulo");
+        const previewBadgeMayorista = document.getElementById("storyPreviewBadgeMayorista");
         const previewWhatsapp = document.getElementById("storyPreviewWhatsapp");
         const previewUbicacion = document.getElementById("storyPreviewUbicacion");
         const previewContainerProds = document.getElementById("storyPreviewProductosContainer");
@@ -663,14 +675,25 @@ try {
             const overlayClass = selectTema ? selectTema.value : "overlay-standard";
             canvasStory.className = `story-canvas ${overlayClass}`;
 
-            // 2. Textos
+            // 2. Textos y Badges
             previewBadge.textContent = inputBadge.value || "❄️ FÁBRICA DIRECTA";
             previewTitulo.textContent = inputTitulo.value || "HIELO EN CUBOS";
             previewSubtitulo.textContent = inputSubtitulo.value || "100% Agua Filtrada y Cristalina • Máxima Duración";
+
+            if (previewBadgeMayorista) {
+                const textoMayorista = inputBadgeMayorista ? inputBadgeMayorista.value.trim() : "🚚 VENTA POR MAYOR";
+                if (textoMayorista) {
+                    previewBadgeMayorista.style.display = "inline-flex";
+                    previewBadgeMayorista.textContent = textoMayorista;
+                } else {
+                    previewBadgeMayorista.style.display = "none";
+                }
+            }
+
             previewWhatsapp.textContent = `PEDIDOS: ${inputWhatsapp.value || '+54 9 11 0000-0000'}`;
             previewUbicacion.textContent = inputUbicacion.value || "Envíos a Kioscos, Bares y Eventos • Planta Central";
 
-            // 3. Renderizar Productos y Precios
+            // 3. Renderizar Productos y Precios Limpios (Sin etiquetas adentro de las filas)
             const checkboxes = document.querySelectorAll(".check-prod-story:checked");
             previewContainerProds.innerHTML = "";
 
@@ -685,7 +708,7 @@ try {
                 return;
             }
 
-            // Mostrar hasta un máximo de 3-4 productos para ajuste visual perfecto
+            // Mostrar hasta un máximo de 3-4 productos con alineación equilibrada
             checkboxes.forEach((chk, index) => {
                 if (index >= 4) return;
                 const id = chk.value;
@@ -696,10 +719,6 @@ try {
 
                 const row = document.createElement("div");
                 row.className = "story-price-row";
-
-                const nombreUpper = (nombre || "").toUpperCase();
-                const esBolsa3kg = nombreUpper.includes("3KG") || nombreUpper.includes("3 KG") || nombreUpper.includes("3 K") || (plantilla === "mayorista" && index === 0);
-                const badgeMayoristaHtml = esBolsa3kg ? `<span class="badge-mayorista-story">VENTA POR MAYOR</span>` : ``;
 
                 if (plantilla === "oferta" && index === 0) {
                     row.style.background = "#2a1e08";
@@ -712,10 +731,7 @@ try {
                             </div>
                             <span class="story-prod-desc">Bolsa cristalina pura • ¡Súper Promo!</span>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            ${badgeMayoristaHtml}
-                            <div class="story-prod-price text-warning">${formatoMoneda.format(precioNum)}</div>
-                        </div>
+                        <div class="story-prod-price text-warning">${formatoMoneda.format(precioNum)}</div>
                     `;
                 } else {
                     let detallePres = "Bolsa individual";
@@ -727,10 +743,7 @@ try {
                             <span class="story-prod-name">${nombre}</span>
                             <span class="story-prod-desc">${detallePres}</span>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            ${badgeMayoristaHtml}
-                            <div class="story-prod-price">${formatoMoneda.format(precioNum)}</div>
-                        </div>
+                        <div class="story-prod-price">${formatoMoneda.format(precioNum)}</div>
                     `;
                 }
 
@@ -739,7 +752,7 @@ try {
         }
 
         // Listeners en tiempo real
-        [selectTema, inputBadge, inputTitulo, inputSubtitulo, inputWhatsapp, inputUbicacion, selectTipoPlantilla].forEach(el => {
+        [selectTema, inputBadge, inputTitulo, inputSubtitulo, inputBadgeMayorista, inputWhatsapp, inputUbicacion, selectTipoPlantilla].forEach(el => {
             if (el) {
                 el.addEventListener("input", actualizarStory);
                 el.addEventListener("change", actualizarStory);
@@ -758,14 +771,17 @@ try {
                 inputBadge.value = "🔥 ¡SUPER OFERTA FLASH!";
                 inputTitulo.value = "PROMO DEL DÍA";
                 inputSubtitulo.value = "Precios especiales en bolsas de hielo por tiempo limitado";
+                if (inputBadgeMayorista) inputBadgeMayorista.value = "🔥 SÚPER PROMO";
             } else if (p === "mayorista") {
                 inputBadge.value = "🚚 REPARTO MAYORISTA";
                 inputTitulo.value = "PROVEEDOR DE HIELO";
                 inputSubtitulo.value = "Abastecimiento constante a Kioscos, Bares y Gastronomía";
+                if (inputBadgeMayorista) inputBadgeMayorista.value = "🚚 VENTA POR MAYOR";
             } else {
                 inputBadge.value = "❄️ FÁBRICA DIRECTA";
                 inputTitulo.value = "HIELO EN CUBOS";
                 inputSubtitulo.value = "100% Agua Filtrada y Cristalina • Máxima Duración";
+                if (inputBadgeMayorista) inputBadgeMayorista.value = "🚚 VENTA POR MAYOR";
             }
             actualizarStory();
         });
@@ -867,15 +883,16 @@ try {
                             r.style.boxShadow = "none";
                         });
 
-                        // Asegurar etiqueta VENTA POR MAYOR en el clon
-                        clonedDoc.querySelectorAll(".badge-mayorista-story").forEach(b => {
-                            b.style.backgroundColor = "#dc2626";
-                            b.style.color = "#ffffff";
-                            b.style.borderColor = "#ef4444";
-                            b.style.boxShadow = "none";
-                        });
+                        // Asegurar etiqueta VENTA POR MAYOR en el header
+                        const clonedBadgeMayorista = clonedDoc.getElementById("storyPreviewBadgeMayorista");
+                        if (clonedBadgeMayorista) {
+                            clonedBadgeMayorista.style.backgroundColor = "#dc2626";
+                            clonedBadgeMayorista.style.color = "#ffffff";
+                            clonedBadgeMayorista.style.borderColor = "#ef4444";
+                            clonedBadgeMayorista.style.boxShadow = "none";
+                        }
 
-                        // Forzar fondo sólido en footer CTA y badge
+                        // Forzar fondo sólido en footer CTA y badge superior
                         const clonedFooter = clonedDoc.querySelector(".story-footer-cta");
                         if (clonedFooter) {
                             clonedFooter.style.backgroundColor = "#09121f";
