@@ -49,10 +49,17 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
 
         <!-- Hero Section -->
         <section class="hero-panel p-4 p-md-5 mb-4">
-            <div class="hero-contenido">
-                <p class="etiqueta text-white-50 mb-2">Punto de Venta y Mostrador</p>
-                <h1 class="display-6 fw-bold mb-2">Hola, <?= htmlspecialchars($nombreCompleto, ENT_QUOTES, "UTF-8") ?></h1>
-                <p class="lead text-white-50 mb-0">Atención rápida de clientes, consulta de stock en cámara y registro ágil de ventas.</p>
+            <div class="hero-contenido d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <p class="etiqueta text-white-50 mb-2">Punto de Venta y Mostrador</p>
+                    <h1 class="display-6 fw-bold mb-2">Hola, <?= htmlspecialchars($nombreCompleto, ENT_QUOTES, "UTF-8") ?></h1>
+                    <p class="lead text-white-50 mb-0">Atención rápida de clientes, consulta de stock en cámara y registro ágil de ventas.</p>
+                </div>
+                <div>
+                    <a href="venta_form.php" class="btn btn-success btn-lg px-4 py-3 fw-bold fs-5 shadow-lg d-inline-flex align-items-center gap-2 text-nowrap rounded-pill">
+                        <i class="bi bi-cart-plus-fill fs-3"></i> <span>Registrar Venta</span>
+                    </a>
+                </div>
             </div>
         </section>
 
