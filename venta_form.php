@@ -184,8 +184,12 @@ $csrf = tokenCsrf();
                             <strong id="itemPreUnidades" class="text-dark">0 un.</strong>
                         </div>
                         <div class="d-flex justify-content-between small text-muted mb-1">
-                            <span>Precio unitario:</span>
+                            <span>Precio unitario lista:</span>
                             <span id="itemPrePrecio">$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small fw-semibold text-primary mb-1">
+                            <span>Precio unitario con descuento:</span>
+                            <strong id="itemPrePrecioDesc" class="text-primary">$ 0,00</strong>
                         </div>
                         <div class="d-flex justify-content-between small text-muted mb-1">
                             <span>Subtotal ítem:</span>
@@ -281,6 +285,58 @@ $csrf = tokenCsrf();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Venta Registrada con Remito PDF -->
+    <div class="modal fade" id="modalVentaExitosa" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white py-3">
+                    <h2 class="modal-title fs-5 fw-bold mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i> ¡Venta Registrada con Éxito!
+                    </h2>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <div class="display-6 text-success fw-bold" id="modalExitoTotal">$ 0,00</div>
+                        <p class="text-muted mb-1" id="modalExitoCliente">Cliente: Consumidor Final</p>
+                        <span class="badge text-bg-light border font-monospace fs-6" id="modalExitoTicket">TK-000000</span>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border text-start mb-4 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Total bolsas/unidades:</span>
+                            <strong id="modalExitoUnidades">0 un.</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Descuento aplicado:</span>
+                            <span id="modalExitoDescuento" class="text-danger">$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Comprobante comercial:</span>
+                            <span class="badge text-bg-primary">Remito Oficial Listo</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="#" target="_blank" class="btn btn-primary btn-lg fw-bold shadow-sm" id="btnModalVerRemito">
+                            <i class="bi bi-file-earmark-pdf-fill me-2"></i> Generar / Ver Remito PDF
+                        </a>
+                        <button type="button" class="btn btn-success fw-semibold" id="btnModalWhatsapp">
+                            <i class="bi bi-whatsapp me-2"></i> Compartir por WhatsApp
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light justify-content-between p-3">
+                    <button type="button" class="btn btn-outline-secondary" id="btnModalNuevaVenta">
+                        <i class="bi bi-plus-circle me-1"></i> Nueva Venta
+                    </button>
+                    <a href="<?= $paginaRetorno ?>" class="btn btn-dark">
+                        <i class="bi bi-arrow-left-circle me-1"></i> Volver al Listado
+                    </a>
                 </div>
             </div>
         </div>
@@ -807,6 +863,7 @@ $csrf = tokenCsrf();
             const subtotal = totalUnidades * precio;
             const montoDesc = subtotal * (descPorc / 100);
             const total = Math.max(0, subtotal - montoDesc);
+            const precioUnitarioConDescuento = descPorc > 0 ? (precio * (1 - (descPorc / 100))) : precio;
 
             const presProd = (opt.dataset.presentacion || "unidad").toLowerCase();
             const permiteUnid = (presProd === "unidad") || (opt.dataset.permiteVentaUnidad === "1");
@@ -822,6 +879,7 @@ $csrf = tokenCsrf();
                 proveedor: proveedor,
                 stock_disponible: stock,
                 precio_unitario: precio,
+                precio_unitario_con_descuento: precioUnitarioConDescuento,
                 tipo_venta: tipoVenta,
                 cantidad: cantidad,
                 cantidad_empaque: cantidad,
@@ -838,12 +896,14 @@ $csrf = tokenCsrf();
             const calc = obtenerCalculoActual();
             const lblUnid = document.getElementById("itemPreUnidades");
             const lblPrecio = document.getElementById("itemPrePrecio");
+            const lblPrecioDesc = document.getElementById("itemPrePrecioDesc");
             const lblSub = document.getElementById("itemPreSubtotal");
             const lblTot = document.getElementById("itemPreTotal");
 
             if (!calc || calc.error) {
                 lblUnid.textContent = "0 un.";
                 lblPrecio.textContent = "$ 0,00";
+                if (lblPrecioDesc) lblPrecioDesc.textContent = "$ 0,00";
                 lblSub.textContent = "$ 0,00";
                 lblTot.textContent = "$ 0,00";
                 infoEmpaque.classList.add("d-none");
@@ -859,6 +919,9 @@ $csrf = tokenCsrf();
 
             lblUnid.textContent = `${calc.total_unidades} un.`;
             lblPrecio.textContent = formatoMoneda.format(calc.precio_unitario);
+            if (lblPrecioDesc) {
+                lblPrecioDesc.textContent = formatoMoneda.format(calc.precio_unitario_con_descuento);
+            }
             lblSub.textContent = formatoMoneda.format(calc.subtotal);
             lblTot.textContent = formatoMoneda.format(calc.total);
         }
@@ -960,8 +1023,12 @@ $csrf = tokenCsrf();
                 tr.appendChild(tdProd);
 
                 const tdPrecio = document.createElement("td");
-                tdPrecio.textContent = formatoMoneda.format(item.precio_unitario);
                 tdPrecio.className = "small";
+                if (item.descuento_porcentaje > 0 && item.precio_unitario_con_descuento) {
+                    tdPrecio.innerHTML = `<span class="text-decoration-line-through text-muted">${formatoMoneda.format(item.precio_unitario)}</span><br><strong class="text-primary">${formatoMoneda.format(item.precio_unitario_con_descuento)} c/u</strong>`;
+                } else {
+                    tdPrecio.textContent = formatoMoneda.format(item.precio_unitario);
+                }
                 tr.appendChild(tdPrecio);
 
                 const tdDesc = document.createElement("td");
@@ -1080,6 +1147,23 @@ $csrf = tokenCsrf();
             }
         });
 
+        // Instancia Modal Venta Exitosa
+        const modalVentaExitosaEl = document.getElementById("modalVentaExitosa");
+        const modalVentaExitosaBs = new bootstrap.Modal(modalVentaExitosaEl);
+
+        document.getElementById("btnModalNuevaVenta").addEventListener("click", () => {
+            modalVentaExitosaBs.hide();
+            carrito = [];
+            renderizarCarrito();
+            document.getElementById("clienteNombre").value = "Consumidor Final";
+            document.getElementById("clienteTelefono").value = "";
+            document.getElementById("clienteDireccion").value = "";
+            document.getElementById("btnConfirmarVenta").disabled = true;
+            document.getElementById("btnConfirmarVenta").textContent = "Confirmar y Registrar Venta";
+            inputBuscador.focus();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
         // Confirmar Venta Rápida
         document.getElementById("btnConfirmarVenta").addEventListener("click", async () => {
             const errBox = document.getElementById("alertaError");
@@ -1129,15 +1213,42 @@ $csrf = tokenCsrf();
                     throw new Error(data.error || "Error al procesar la venta.");
                 }
 
-                okBox.innerHTML = `<strong>¡Venta registrada con éxito!</strong> ${data.mensaje || ''} ${data.ticket_id ? `<br><span class="font-monospace small">Ticket: ${data.ticket_id}</span>` : ''}`;
-                okBox.classList.remove("d-none");
-                carrito = [];
-                renderizarCarrito();
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                // Preparar datos del modal de éxito con Remito PDF
+                const ticketId = data.ticket_id || "";
+                const totalVentaNum = data.total || 0;
+                const remitoUrl = `generar_remito.php?ticket_id=${encodeURIComponent(ticketId)}`;
 
-                setTimeout(() => {
-                    window.location.href = "<?= $paginaRetorno ?>";
-                }, 1500);
+                document.getElementById("modalExitoTotal").textContent = formatoMoneda.format(totalVentaNum);
+                document.getElementById("modalExitoCliente").textContent = `Cliente: ${data.cliente || nombreCli}`;
+                document.getElementById("modalExitoTicket").textContent = `Ticket: ${ticketId}`;
+                document.getElementById("modalExitoUnidades").textContent = `${data.total_unidades || 0} bolsas`;
+                document.getElementById("modalExitoDescuento").textContent = data.descuento_total > 0 ? `-${formatoMoneda.format(data.descuento_total)}` : "$ 0,00";
+
+                const btnVerRemito = document.getElementById("btnModalVerRemito");
+                btnVerRemito.href = remitoUrl;
+
+                // Configurar botón de WhatsApp
+                const btnWp = document.getElementById("btnModalWhatsapp");
+                btnWp.onclick = () => {
+                    const urlRemitoAbs = window.location.origin + window.location.pathname.replace("venta_form.php", "") + remitoUrl;
+                    let telLimpio = telCli.replace(/[^0-9]/g, '');
+                    if (telLimpio.startsWith('0')) telLimpio = telLimpio.substring(1);
+                    if (telLimpio && !telLimpio.startsWith('54')) telLimpio = '549' + telLimpio;
+
+                    const msg = encodeURIComponent(
+                        `*REMITO DE ENTREGA - FÁBRICA DE HIELO*\n` +
+                        `Hola *${nombreCli}*, tu pedido de bolsas de hielo fue registrado con éxito.\n\n` +
+                        `🧾 *Ticket:* ${ticketId}\n` +
+                        `💰 *Total:* ${formatoMoneda.format(totalVentaNum)}\n` +
+                        `📄 *Ver/Descargar Remito PDF:* ${urlRemitoAbs}\n\n` +
+                        `¡Muchas gracias!`
+                    );
+                    const wpLink = telLimpio ? `https://api.whatsapp.com/send?phone=${telLimpio}&text=${msg}` : `https://api.whatsapp.com/send?text=${msg}`;
+                    window.open(wpLink, '_blank');
+                };
+
+                // Mostrar Modal de Remito
+                modalVentaExitosaBs.show();
 
             } catch (err) {
                 errBox.textContent = err.message;

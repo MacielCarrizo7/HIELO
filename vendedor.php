@@ -214,6 +214,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
                             <select id="filtroEstado" name="estado" class="form-select">
                                 <option value="">Todos los estados</option>
                                 <option value="ACTIVA">Activa</option>
+                                <option value="ENTREGADO">Entregado</option>
                                 <option value="MODIFICADA">Modificada</option>
                                 <option value="CANCELADA">Cancelada</option>
                             </select>

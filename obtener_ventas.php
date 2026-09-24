@@ -11,7 +11,7 @@ $clienteIdTexto = trim($_GET["cliente_id"] ?? "");
 $clienteNombreFiltro = mb_strtolower(trim($_GET["cliente_nombre"] ?? ""));
 $estado = strtoupper(trim($_GET["estado"] ?? ""));
 $vendedorIdTexto = trim($_GET["vendedor_id"] ?? "");
-$estadosValidos = ["ACTIVA", "MODIFICADA", "CANCELADA"];
+$estadosValidos = ["ACTIVA", "ENTREGADO", "MODIFICADA", "CANCELADA"];
 
 if (($desde !== "" && !fechaIsoValida($desde)) || ($hasta !== "" && !fechaIsoValida($hasta))) {
     responderJson(["error" => "Ingresá fechas válidas."], 400);
@@ -50,6 +50,7 @@ try {
         $usuId = (int) ($v["usuario_id"] ?? 0);
         $est = (string) ($v["estado"] ?? "ACTIVA");
         $fecha = (string) ($v["fecha"] ?? "");
+        $ticketId = (string) ($v["ticket_id"] ?? "");
 
         // Filtro por fecha desde
         if ($desde !== "" && $fecha !== "" && substr($fecha, 0, 10) < $desde) {
@@ -86,20 +87,27 @@ try {
             continue;
         }
 
+        $precioUnit = (float) ($v["precio_unitario"] ?? 0);
+        $descPorc = (float) ($v["descuento_porcentaje"] ?? 0);
+        $precioUnitConDesc = $descPorc > 0 ? ($precioUnit * (1 - $descPorc / 100)) : $precioUnit;
+
         $ventasFiltradas[] = [
             "id" => $id,
+            "ticket_id" => $ticketId,
             "producto_id" => $prodId,
             "producto_nombre" => (string) ($v["producto_nombre"] ?? ""),
             "tipo_venta" => (string) ($v["tipo_venta"] ?? "unidad"),
             "cantidad_empaque" => (int) ($v["cantidad_empaque"] ?? $v["cantidad"] ?? 0),
             "cantidad" => (int) ($v["cantidad"] ?? 0),
-            "precio_unitario" => (float) ($v["precio_unitario"] ?? 0),
+            "precio_unitario" => $precioUnit,
+            "precio_unitario_con_descuento" => $precioUnitConDesc,
             "subtotal" => (float) ($v["subtotal"] ?? 0),
-            "descuento_porcentaje" => (float) ($v["descuento_porcentaje"] ?? 0),
+            "descuento_porcentaje" => $descPorc,
             "descuento_monto" => (float) ($v["descuento_monto"] ?? 0),
             "total" => (float) ($v["total"] ?? 0),
             "fecha" => $fecha,
             "estado" => $est,
+            "fecha_entrega" => !empty($v["fecha_entrega"]) ? (string)$v["fecha_entrega"] : null,
             "fecha_modificacion" => !empty($v["fecha_modificacion"]) ? (string)$v["fecha_modificacion"] : null,
             "motivo_cancelacion" => !empty($v["motivo_cancelacion"]) ? (string)$v["motivo_cancelacion"] : null,
             "cliente_id" => $cliId,

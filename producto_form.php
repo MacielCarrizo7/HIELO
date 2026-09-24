@@ -143,7 +143,7 @@ $csrf = tokenCsrf();
                             <div class="col-12">
                                 <label for="prodCodigoBarras" class="form-label">Código de Barras de la Bolsa (EAN-13 / CODE128)</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control font-monospace" id="prodCodigoBarras" name="codigo_barras" value="<?= htmlspecialchars($producto['codigo_barras'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: 7791234567890">
+                                    <input type="text" class="form-control font-monospace" id="prodCodigoBarras" name="codigo_barras" value="<?= htmlspecialchars($producto['codigo_barras'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: 2001234567890">
                                     <button class="btn btn-outline-secondary" type="button" id="btnEscanearCb" title="Escanear con cámara">Escanear</button>
                                     <button class="btn btn-outline-secondary" type="button" id="btnGenerarCb" title="Generar código aleatorio">Generar</button>
                                 </div>
@@ -510,7 +510,14 @@ $csrf = tokenCsrf();
             });
 
             document.getElementById("btnGenerarCb").addEventListener("click", () => {
-                document.getElementById("prodCodigoBarras").value = "779" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                let suma = 0;
+                for (let i = 0; i < 12; i++) {
+                    const d = parseInt(primeros12.charAt(i), 10);
+                    suma += (i % 2 === 0) ? d : d * 3;
+                }
+                const digitoControl = (10 - (suma % 10)) % 10;
+                document.getElementById("prodCodigoBarras").value = primeros12 + digitoControl;
             });
 
             document.getElementById("btnEscanearCb").addEventListener("click", () => {
@@ -652,7 +659,14 @@ $csrf = tokenCsrf();
 
                 const inputCb = tr.querySelector(".masivo-cb");
                 tr.querySelector(".btn-gen-cb").addEventListener("click", () => {
-                    inputCb.value = "779" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                    const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                    let suma = 0;
+                    for (let i = 0; i < 12; i++) {
+                        const d = parseInt(primeros12.charAt(i), 10);
+                        suma += (i % 2 === 0) ? d : d * 3;
+                    }
+                    const digitoControl = (10 - (suma % 10)) % 10;
+                    inputCb.value = primeros12 + digitoControl;
                 });
                 tr.querySelector(".btn-scan-cb").addEventListener("click", () => {
                     abrirCamara((decoded) => {

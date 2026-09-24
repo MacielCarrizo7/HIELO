@@ -288,6 +288,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                             <select id="filtroEstado" name="estado" class="form-select">
                                 <option value="">Todos los estados</option>
                                 <option value="ACTIVA">Activa</option>
+                                <option value="ENTREGADO">Entregado</option>
                                 <option value="MODIFICADA">Modificada</option>
                                 <option value="CANCELADA">Cancelada</option>
                             </select>
@@ -469,7 +470,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                                 <div class="mb-3">
                                     <label class="form-label" for="barcodeInputCodigo">Código de Barras *</label>
                                     <div class="input-group">
-                                        <input type="text" id="barcodeInputCodigo" class="form-control font-monospace" placeholder="Ej: 7791234567890">
+                                        <input type="text" id="barcodeInputCodigo" class="form-control font-monospace" placeholder="Ej: 2001234567890">
                                         <button class="btn btn-outline-secondary" type="button" id="btnGenerarCodigoRandom" title="Generar código aleatorio">Generar</button>
                                     </div>
                                     <small class="text-muted">Admite formatos estándar (EAN-13, CODE128, etc.).</small>
@@ -482,7 +483,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
 
                                 <div class="row g-3 mb-3">
                                     <div class="col-12 col-sm-6">
-                                        <label class="form-label" for="barcodeInputPrecio">Precio a mostrar ($)</label>
+                                        <label class="form-label" for="barcodeInputPrecio">Precio de referencia ($) <small class="text-muted">(Opcional)</small></label>
                                         <input type="number" step="0.01" id="barcodeInputPrecio" class="form-control" placeholder="0.00">
                                     </div>
                                     <div class="col-12 col-sm-6">
@@ -503,10 +504,9 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                                 
                                 <div id="seccionImpresionEtiqueta">
                                     <div class="etiqueta-print-box shadow-sm">
-                                        <div class="etiqueta-print-empresa">Fábrica de Hielo</div>
+                                        <div class="etiqueta-print-empresa">FÁBRICA DE HIELO</div>
                                         <div class="etiqueta-print-nombre" id="previewEtiquetaNombre">Bolsa de Hielo</div>
                                         <svg id="previewBarcodeSvg" class="barcode-svg my-2"></svg>
-                                        <div class="etiqueta-print-precio" id="previewEtiquetaPrecio">$ 0,00</div>
                                     </div>
                                 </div>
 
@@ -708,7 +708,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                         <div class="mb-3">
                             <label class="form-label" for="editarProductoCodigoBarras">Código de Barras</label>
                             <div class="input-group">
-                                <input class="form-control font-monospace" id="editarProductoCodigoBarras" name="codigo_barras" maxlength="50" placeholder="Ej: 7791234567890">
+                                <input class="form-control font-monospace" id="editarProductoCodigoBarras" name="codigo_barras" maxlength="50" placeholder="Ej: 2001234567890">
                                 <button class="btn btn-outline-secondary" type="button" id="btnEscanearCodigoModalEdicion" title="Escanear con cámara">Escanear</button>
                                 <button class="btn btn-outline-secondary" type="button" id="btnGenerarCodigoModalEdicion" title="Generar código aleatorio">Generar</button>
                             </div>

@@ -74,9 +74,16 @@ try {
 
         $vencimientoParam = ($fechaVencimiento !== "" && fechaIsoValida($fechaVencimiento)) ? $fechaVencimiento : null;
         
-        // Generar código de barras si viene vacío
+        // Generar código de barras si viene vacío (Prefijo local 200)
         if ($codigoBarras === "") {
-            $codigoBarras = "779" . str_pad((string)random_int(100000000, 999999999), 9, "0", STR_PAD_LEFT);
+            $primeros12 = "200" . str_pad((string)random_int(100000000, 999999999), 9, "0", STR_PAD_LEFT);
+            $suma = 0;
+            for ($i = 0; $i < 12; $i++) {
+                $d = (int)$primeros12[$i];
+                $suma += ($i % 2 === 0) ? $d : $d * 3;
+            }
+            $digitoControl = (10 - ($suma % 10)) % 10;
+            $codigoBarras = $primeros12 . $digitoControl;
         }
 
         $totalUnidades = $stock * $unidadesPorBulto;

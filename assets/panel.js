@@ -1095,7 +1095,6 @@ function llenarSelectorBarcodeProductos() {
 function actualizarPreviewBarcode() {
     const inputCodigo = document.getElementById("barcodeInputCodigo");
     const inputNombre = document.getElementById("barcodeInputNombre");
-    const inputPrecio = document.getElementById("barcodeInputPrecio");
     const selectFormato = document.getElementById("barcodeInputFormato");
     const svgElement = document.getElementById("previewBarcodeSvg");
     const lblNombre = document.getElementById("previewEtiquetaNombre");
@@ -1103,13 +1102,12 @@ function actualizarPreviewBarcode() {
 
     if (!svgElement) return;
 
-    const codigo = inputCodigo && inputCodigo.value.trim() ? inputCodigo.value.trim() : "779123456789";
-    const nombre = inputNombre && inputNombre.value.trim() ? inputNombre.value.trim() : "Nombre del Producto";
-    const precio = inputPrecio && inputPrecio.value ? Number(inputPrecio.value) : 0;
+    const codigo = inputCodigo && inputCodigo.value.trim() ? inputCodigo.value.trim() : "2001234567890";
+    const nombre = inputNombre && inputNombre.value.trim() ? inputNombre.value.trim() : "Bolsa de Hielo";
     const formato = selectFormato && selectFormato.value ? selectFormato.value : "CODE128";
 
     if (lblNombre) lblNombre.textContent = nombre;
-    if (lblPrecio) lblPrecio.textContent = precio > 0 ? formatoMoneda.format(precio) : "$ 0,00";
+    if (lblPrecio) lblPrecio.textContent = "";
 
     // Limpiar contenido previo del SVG
     svgElement.innerHTML = "";
@@ -1178,8 +1176,15 @@ if (barcodeSelector) {
 });
 
 function generarCodigoEan13() {
-    let codigo = "779" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
-    return codigo;
+    // Prefijo 200 (Rango de uso interno local para fábrica / cámara de frío)
+    const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+    let suma = 0;
+    for (let i = 0; i < 12; i++) {
+        const d = parseInt(primeros12.charAt(i), 10);
+        suma += (i % 2 === 0) ? d : d * 3;
+    }
+    const digitoControl = (10 - (suma % 10)) % 10;
+    return primeros12 + digitoControl.toString();
 }
 
 const btnRandomCode = document.getElementById("btnGenerarCodigoRandom");
@@ -1662,8 +1667,21 @@ async function cargarVentas(filtros = {}) {
             const badge = document.createElement("span");
             const esCancelada = venta.estado === "CANCELADA";
             const esModificada = venta.estado === "MODIFICADA";
-            badge.className = `badge ${esCancelada ? "text-bg-danger" : esModificada ? "text-bg-warning" : "text-bg-success"}`;
-            badge.textContent = venta.estado || "ACTIVA";
+            const esEntregada = venta.estado === "ENTREGADO";
+
+            if (esCancelada) {
+                badge.className = "badge text-bg-danger";
+                badge.textContent = "Cancelada";
+            } else if (esEntregada) {
+                badge.className = "badge text-bg-success d-inline-flex align-items-center gap-1";
+                badge.innerHTML = '<i class="bi bi-check2-circle"></i> Entregado';
+            } else if (esModificada) {
+                badge.className = "badge text-bg-warning text-dark";
+                badge.textContent = "Modificada";
+            } else {
+                badge.className = "badge text-bg-primary";
+                badge.textContent = "Activa";
+            }
             estadoTd.appendChild(badge);
             fila.appendChild(estadoTd);
 
@@ -1673,9 +1691,47 @@ async function cargarVentas(filtros = {}) {
 
             const accion = document.createElement("td");
             accion.className = "text-end";
+            const grupo = document.createElement("div");
+            grupo.className = "d-inline-flex flex-wrap gap-1 justify-content-end";
+
+            // Botón de Remito PDF disponible siempre para ventas activas / entregadas / modificadas
+            const btnRemito = document.createElement("a");
+            btnRemito.href = `generar_remito.php?id=${venta.id}${venta.ticket_id ? `&ticket_id=${encodeURIComponent(venta.ticket_id)}` : ''}`;
+            btnRemito.target = "_blank";
+            btnRemito.className = "btn btn-outline-dark btn-sm";
+            btnRemito.title = "Generar / Ver Remito PDF";
+            btnRemito.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Remito';
+            grupo.appendChild(btnRemito);
+
             if (!esCancelada) {
-                const grupo = document.createElement("div");
-                grupo.className = "d-inline-flex gap-1";
+                // Botón rápido de Entregado con un solo clic si no fue entregada aún
+                if (!esEntregada) {
+                    const btnEntregar = document.createElement("button");
+                    btnEntregar.type = "button";
+                    btnEntregar.className = "btn btn-success btn-sm";
+                    btnEntregar.title = "Marcar pedido de hielo como ENTREGADO con un solo clic";
+                    btnEntregar.innerHTML = '<i class="bi bi-truck me-1"></i>Entregar';
+                    btnEntregar.addEventListener("click", async () => {
+                        if (!confirm(`¿Marcar la venta #${venta.id} (${venta.cliente || 'Cliente'}) como ENTREGADO?`)) return;
+                        btnEntregar.disabled = true;
+                        btnEntregar.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                        try {
+                            await solicitar("marcar_entrega_venta.php", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ venta_id: venta.id, ticket_id: venta.ticket_id || "" })
+                            });
+                            const formFiltros = document.getElementById("formFiltrosVentas");
+                            const datosFiltros = formFiltros ? Object.fromEntries(new FormData(formFiltros)) : {};
+                            await cargarVentas(datosFiltros);
+                        } catch (err) {
+                            alert("Error al cambiar estado: " + err.message);
+                            btnEntregar.disabled = false;
+                            btnEntregar.innerHTML = '<i class="bi bi-truck me-1"></i>Entregar';
+                        }
+                    });
+                    grupo.appendChild(btnEntregar);
+                }
 
                 const btnModificar = document.createElement("button");
                 btnModificar.type = "button";
@@ -1701,10 +1757,9 @@ async function cargarVentas(filtros = {}) {
                 });
 
                 grupo.append(btnModificar, btnCancelar);
-                accion.appendChild(grupo);
-            } else {
-                accion.textContent = "—";
             }
+
+            accion.appendChild(grupo);
             fila.appendChild(accion);
 
             tbody.appendChild(fila);
