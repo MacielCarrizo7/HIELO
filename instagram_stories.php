@@ -515,18 +515,21 @@ try {
                         <!-- Marco de Celular con Story -->
                         <div class="phone-frame mb-3">
                             <div class="phone-screen">
-                                <div id="storyCanvasExport" class="story-canvas overlay-standard" style="background-image: url('assets/FONDO HISTORIA.jpg') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: rgba(0, 0, 0, 0.5); background-blend-mode: overlay;">
+                                <div id="storyCanvasExport" class="story-canvas" style="position: relative; overflow: hidden; background: #031526;">
                                     
-                                    <!-- Escarcha de fondo -->
-                                    <div class="frost-overlay"></div>
+                                    <!-- Imagen de Fondo Real Precargada con CrossOrigin -->
+                                    <img id="storyRealBgImg" src="assets/FONDO%20HISTORIA.jpg" crossOrigin="anonymous" alt="Fondo Hielo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none;">
+                                    
+                                    <!-- Capa de Overlay Oscuro para Alto Contraste -->
+                                    <div id="storyOverlayLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.42); z-index: 1; pointer-events: none;"></div>
 
                                     <!-- Header de la Historia -->
-                                    <div style="position: relative; z-index: 2;">
+                                    <div style="position: relative; z-index: 3;">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="ice-badge-top" id="storyPreviewBadge">
                                                 ❄️ FÁBRICA DIRECTA
                                             </span>
-                                            <div class="text-white-50 small" style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em;">
+                                            <div class="text-white-50 small" style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                                                 PREMIUM ICE
                                             </div>
                                         </div>
@@ -539,184 +542,13 @@ try {
                                         </p>
                                     </div>
 
-                                    <!-- Gráfico Central: 2 Bolsas de Hielo Transparentes y Reales llenas de cubos -->
-                                    <div class="ice-bags-stage" style="position: relative; z-index: 2;">
-                                        <div class="ice-bags-svg-wrapper">
-                                            <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                                                <defs>
-                                                    <!-- Gradientes de Bolsas Transparentes -->
-                                                    <linearGradient id="bagGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
-                                                        <stop offset="30%" stop-color="#7dd3fc" stop-opacity="0.2"/>
-                                                        <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.15"/>
-                                                        <stop offset="100%" stop-color="#0284c7" stop-opacity="0.35"/>
-                                                    </linearGradient>
-                                                    <linearGradient id="bagGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
-                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
-                                                        <stop offset="40%" stop-color="#bae6fd" stop-opacity="0.25"/>
-                                                        <stop offset="80%" stop-color="#0ea5e9" stop-opacity="0.2"/>
-                                                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.4"/>
-                                                    </linearGradient>
-                                                    
-                                                    <!-- Gradiente Cubos de Hielo -->
-                                                    <linearGradient id="iceCubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
-                                                        <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.7"/>
-                                                    </linearGradient>
-                                                    <linearGradient id="iceCubeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.8"/>
-                                                        <stop offset="100%" stop-color="#0284c7" stop-opacity="0.9"/>
-                                                    </linearGradient>
-                                                    <linearGradient id="iceCubeRight" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
-                                                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.95"/>
-                                                    </linearGradient>
-                                                    
-                                                    <!-- Filtro de Resplandor Frío -->
-                                                    <filter id="iceGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                                        <feGaussianBlur stdDeviation="3" result="blur"/>
-                                                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-                                                    </filter>
-                                                </defs>
-
-                                                <!-- Sombra / Resplandor Base en el suelo -->
-                                                <ellipse cx="200" cy="185" rx="160" ry="12" fill="#000000" opacity="0.45" />
-                                                <ellipse cx="200" cy="183" rx="130" ry="8" fill="#38bdf8" opacity="0.25" />
-
-                                                <!-- ==========================================
-                                                     BOLSA IZQUIERDA (Bolsa de Hielo 1)
-                                                =========================================== -->
-                                                <g transform="translate(60, 15) rotate(-6, 80, 90)">
-                                                    <!-- Cuerpo de la Bolsa -->
-                                                    <path d="M 30,35 C 45,30 115,30 130,35 C 145,55 150,135 140,165 C 130,175 30,175 20,165 C 10,135 15,55 30,35 Z" 
-                                                          fill="url(#bagGradLeft)" stroke="rgba(255,255,255,0.7)" stroke-width="2" />
-
-                                                    <!-- Cubos de Hielo dentro de la Bolsa 1 -->
-                                                    <!-- Fila Inferior de Cubos -->
-                                                    <g transform="translate(32, 115) scale(0.65)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(62, 118) scale(0.68)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(92, 112) scale(0.65)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <!-- Fila Media de Cubos -->
-                                                    <g transform="translate(42, 85) scale(0.7)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(75, 82) scale(0.72)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <!-- Fila Superior de Cubos -->
-                                                    <g transform="translate(58, 52) scale(0.68)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-
-                                                    <!-- Brillo y Pliegues de la Bolsa 1 -->
-                                                    <path d="M 28,45 C 50,70 40,140 32,158" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.6" fill="none"/>
-                                                    <path d="M 125,50 C 130,90 120,135 128,155" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.5" fill="none"/>
-                                                    
-                                                    <!-- Fruncido / Cierre Superior de la Bolsa -->
-                                                    <path d="M 68,32 C 60,15 55,5 80,4 C 105,5 100,15 92,32 Z" fill="url(#bagGradLeft)" stroke="#ffffff" stroke-width="1.5"/>
-                                                    <ellipse cx="80" cy="30" rx="14" ry="4" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-
-                                                    <!-- Etiqueta Helada en la Bolsa -->
-                                                    <rect x="45" y="100" width="70" height="26" rx="5" fill="#0369a1" fill-opacity="0.85" stroke="#bae6fd" stroke-width="1"/>
-                                                    <text x="80" y="117" font-family="'Outfit', sans-serif" font-size="11" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">HIELO</text>
-                                                </g>
-
-                                                <!-- ==========================================
-                                                     BOLSA DERECHA (Bolsa de Hielo 2)
-                                                =========================================== -->
-                                                <g transform="translate(180, 10) rotate(5, 80, 95)">
-                                                    <!-- Cuerpo de la Bolsa 2 -->
-                                                    <path d="M 30,35 C 45,28 120,28 135,35 C 150,55 155,140 142,170 C 130,178 30,178 18,170 C 8,140 15,55 30,35 Z" 
-                                                          fill="url(#bagGradRight)" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" />
-
-                                                    <!-- Cubos de Hielo dentro de la Bolsa 2 -->
-                                                    <!-- Fila Inferior -->
-                                                    <g transform="translate(30, 118) scale(0.7)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(62, 122) scale(0.72)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(95, 115) scale(0.68)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <!-- Fila Media -->
-                                                    <g transform="translate(45, 86) scale(0.74)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <g transform="translate(78, 84) scale(0.74)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-                                                    <!-- Fila Superior -->
-                                                    <g transform="translate(60, 52) scale(0.72)">
-                                                        <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                        <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                        <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                    </g>
-
-                                                    <!-- Brillo y Reflejos Plásticos Bolsa 2 -->
-                                                    <path d="M 28,45 C 55,75 42,145 32,165" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.75" fill="none"/>
-                                                    <path d="M 132,50 C 135,95 125,140 132,160" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6" fill="none"/>
-                                                    
-                                                    <!-- Fruncido / Cierre Superior Bolsa 2 -->
-                                                    <path d="M 70,30 C 62,12 58,2 84,2 C 110,2 105,12 96,30 Z" fill="url(#bagGradRight)" stroke="#ffffff" stroke-width="1.5"/>
-                                                    <ellipse cx="83" cy="28" rx="15" ry="4" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-
-                                                    <!-- Etiqueta Helada en la Bolsa 2 -->
-                                                    <rect x="48" y="100" width="72" height="28" rx="5" fill="#0284c7" fill-opacity="0.9" stroke="#ffffff" stroke-width="1.2"/>
-                                                    <text x="84" y="118" font-family="'Outfit', sans-serif" font-size="11.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">ROLITOS</text>
-                                                </g>
-
-                                                <!-- Cubos de Hielo Flotando Sueltos en la Base -->
-                                                <g transform="translate(185, 155) scale(0.55)">
-                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                </g>
-                                                <g transform="translate(45, 155) rotate(15) scale(0.5)">
-                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                </g>
-                                                <g transform="translate(325, 150) rotate(-20) scale(0.52)">
-                                                    <polygon points="20,0 40,10 20,20 0,10" fill="url(#iceCubeTop)"/>
-                                                    <polygon points="0,10 20,20 20,40 0,30" fill="url(#iceCubeLeft)"/>
-                                                    <polygon points="20,20 40,10 40,30 20,40" fill="url(#iceCubeRight)"/>
-                                                </g>
-                                            </svg>
-                                        </div>
+                                    <!-- Espacio Central: Permite lucir las 2 Bolsas de Hielo Reales de la imagen de fondo -->
+                                    <div class="ice-bags-stage" style="position: relative; z-index: 3; height: 165px; display: flex; align-items: center; justify-content: center;">
+                                        <!-- Área despejada y nítida para la fotografía de fondo -->
                                     </div>
 
                                     <!-- Recuadro Moderno de Precios Reales (Firestore) -->
-                                    <div class="story-pricing-box" style="position: relative; z-index: 2;">
+                                    <div class="story-pricing-box" style="position: relative; z-index: 3;">
                                         <div class="story-pricing-header">
                                             <span class="story-pricing-title">
                                                 <i class="bi bi-tag-fill"></i> Precios Actualizados
@@ -733,7 +565,7 @@ try {
                                     </div>
 
                                     <!-- Footer con WhatsApp y Contacto -->
-                                    <div class="story-footer-cta" style="position: relative; z-index: 2;">
+                                    <div class="story-footer-cta" style="position: relative; z-index: 3;">
                                         <div class="story-whatsapp-btn">
                                             <i class="bi bi-whatsapp fs-6"></i>
                                             <span id="storyPreviewWhatsapp">PEDIDOS: +54 9 11 4567-8900</span>
@@ -956,14 +788,66 @@ try {
                    `#Hielo #FabricaDeHielo #Rolitos #BolsasDeHielo #Bebidas #Eventos #Gastronomia #Verano`;
         }
 
+        function precargarImagenFondo(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    const img2 = new Image();
+                    img2.crossOrigin = "anonymous";
+                    img2.onload = () => resolve(img2);
+                    img2.onerror = err => reject(err);
+                    img2.src = encodeURI(src);
+                };
+                img.src = src;
+            });
+        }
+
         async function renderizarCanvasStory() {
             const elemento = document.getElementById("storyCanvasExport");
-            return await html2canvas(elemento, {
+
+            // 1. Precargar obligatoriamente la imagen de fondo con new Image() y crossOrigin
+            let imgFondo = null;
+            try {
+                imgFondo = await precargarImagenFondo("assets/FONDO HISTORIA.jpg");
+            } catch (e1) {
+                try {
+                    imgFondo = await precargarImagenFondo("assets/FONDO%20HISTORIA.jpg");
+                } catch (e2) {
+                    console.warn("Aviso al precargar fondo:", e2);
+                }
+            }
+
+            // 2. Renderizar elementos con html2canvas en HD
+            const canvasRender = await html2canvas(elemento, {
                 scale: 3,
                 useCORS: true,
+                allowTaint: true,
                 logging: false,
                 backgroundColor: null
             });
+
+            // 3. Crear lienzo final en alta definicion y componer la imagen de fondo real
+            const finalCanvas = document.createElement("canvas");
+            finalCanvas.width = canvasRender.width;
+            finalCanvas.height = canvasRender.height;
+            const ctx = finalCanvas.getContext("2d");
+
+            if (imgFondo) {
+                // Dibujar la imagen de fondo en toda la proporcion 9:16
+                ctx.drawImage(imgFondo, 0, 0, finalCanvas.width, finalCanvas.height);
+                
+                // Aplicar overlay oscuro para asegurar alto contraste en textos
+                const overlayEl = document.getElementById("storyOverlayLayer");
+                ctx.fillStyle = (overlayEl && overlayEl.style.backgroundColor) ? overlayEl.style.backgroundColor : "rgba(0, 0, 0, 0.42)";
+                ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+            }
+
+            // Dibujar encima los elementos de la historia (título 3D, badges, precios de Firestore, WhatsApp)
+            ctx.drawImage(canvasRender, 0, 0);
+
+            return finalCanvas;
         }
 
         function canvasToBlobAsync(canvas) {
