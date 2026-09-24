@@ -160,15 +160,15 @@ try {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: #09121f;
+            border: 1px solid #1e3a5f;
             padding: 4px 12px;
             border-radius: 50px;
             font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: none;
             color: #ffffff;
         }
 
@@ -213,14 +213,14 @@ try {
         }
 
         /* =======================================================
-           RECUADRO DE PRECIOS REALES FIRESTORE
+           RECUADRO DE PRECIOS REALES FIRESTORE (FONDO OSCURO SÓLIDO)
         ======================================================= */
         .story-pricing-box {
-            background: rgba(15, 23, 42, 0.82);
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: #09121f;
+            border: 1px solid #1e3a5f;
             border-radius: 16px;
             padding: 9px 11px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+            box-shadow: none;
             margin-bottom: 8px;
         }
 
@@ -230,7 +230,7 @@ try {
             justify-content: space-between;
             padding-bottom: 4px;
             margin-bottom: 4px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid #1e293b;
         }
 
         .story-pricing-title {
@@ -254,14 +254,14 @@ try {
         }
 
         .story-price-row {
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: #0f1e33;
+            border: 1px solid #1e3a5f;
             border-radius: 10px;
             padding: 5px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+            box-shadow: none;
         }
 
         .story-price-info {
@@ -296,15 +296,15 @@ try {
         }
 
         /* =======================================================
-           BANNER FOOTER WHATSAPP & CONTACTO
+           BANNER FOOTER WHATSAPP & CONTACTO (FONDO OSCURO SÓLIDO)
         ======================================================= */
         .story-footer-cta {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: #09121f;
+            border: 1px solid #1e3a5f;
             border-radius: 14px;
             padding: 8px 10px;
             text-align: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            box-shadow: none;
         }
 
         .story-whatsapp-btn {
@@ -815,15 +815,46 @@ try {
                         const clonedOverlay = clonedDoc.getElementById("storyOverlayLayer");
                         if (clonedOverlay) clonedOverlay.style.display = "none";
 
-                        // Limpiar filtros y propiedades que generan cajas blancas en html2canvas
+                        // Limpiar filtros, sombras y propiedades que generan halos o cajas blancas en html2canvas
                         clonedExport.querySelectorAll("*").forEach(node => {
                             node.style.backdropFilter = "none";
                             node.style.webkitBackdropFilter = "none";
+                            node.style.boxShadow = "none";
+                            node.style.filter = "none";
                             node.style.webkitBackgroundClip = "unset";
                             node.style.backgroundClip = "unset";
                             node.style.webkitTextFillColor = "unset";
-                            node.style.filter = "none";
                         });
+
+                        // Forzar fondo plano sólido y borde limpio en el contenedor de precios
+                        const clonedPricingBox = clonedDoc.querySelector(".story-pricing-box");
+                        if (clonedPricingBox) {
+                            clonedPricingBox.style.backgroundColor = "#09121f";
+                            clonedPricingBox.style.borderColor = "#1e3a5f";
+                            clonedPricingBox.style.boxShadow = "none";
+                        }
+
+                        // Forzar fondo plano sólido en cada fila de precio
+                        clonedDoc.querySelectorAll(".story-price-row").forEach(r => {
+                            r.style.backgroundColor = "#0f1e33";
+                            r.style.borderColor = "#1e3a5f";
+                            r.style.boxShadow = "none";
+                        });
+
+                        // Forzar fondo sólido en footer CTA y badge
+                        const clonedFooter = clonedDoc.querySelector(".story-footer-cta");
+                        if (clonedFooter) {
+                            clonedFooter.style.backgroundColor = "#09121f";
+                            clonedFooter.style.borderColor = "#1e3a5f";
+                            clonedFooter.style.boxShadow = "none";
+                        }
+
+                        const clonedBadge = clonedDoc.getElementById("storyPreviewBadge");
+                        if (clonedBadge) {
+                            clonedBadge.style.backgroundColor = "#09121f";
+                            clonedBadge.style.borderColor = "#1e3a5f";
+                            clonedBadge.style.boxShadow = "none";
+                        }
 
                         // Título 3D ultra limpio con sombras puras
                         const clonedTitle = clonedDoc.getElementById("storyPreviewTitulo");
