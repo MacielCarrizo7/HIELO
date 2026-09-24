@@ -1733,18 +1733,6 @@ async function cargarVentas(filtros = {}) {
                     grupo.appendChild(btnEntregar);
                 }
 
-                const btnModificar = document.createElement("button");
-                btnModificar.type = "button";
-                btnModificar.className = "btn btn-outline-primary btn-sm";
-                btnModificar.textContent = "Modificar";
-                btnModificar.addEventListener("click", () => {
-                    document.getElementById("modificarVentaId").value = venta.id;
-                    document.getElementById("modificarCantidad").value = venta.cantidad;
-                    document.getElementById("motivoModificacion").value = "";
-                    document.getElementById("errorModificarVenta").classList.add("d-none");
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById("modalModificarVenta")).show();
-                });
-
                 const btnCancelar = document.createElement("button");
                 btnCancelar.type = "button";
                 btnCancelar.className = "btn btn-outline-danger btn-sm";
@@ -1756,7 +1744,7 @@ async function cargarVentas(filtros = {}) {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById("modalCancelarVenta")).show();
                 });
 
-                grupo.append(btnModificar, btnCancelar);
+                grupo.append(btnCancelar);
             }
 
             accion.appendChild(grupo);
@@ -2726,6 +2714,100 @@ if (formFiltrosVentas) {
         btnLimpiarVentas.addEventListener("click", () => {
             formFiltrosVentas.reset();
             cargarVentas();
+        });
+    }
+
+    const btnExportarVentas = document.getElementById("btnExportarVentasCsv");
+    if (btnExportarVentas) {
+        btnExportarVentas.addEventListener("click", async () => {
+            const params = new URLSearchParams();
+            if (formFiltrosVentas) {
+                const datos = Object.fromEntries(new FormData(formFiltrosVentas));
+                Object.entries(datos).forEach(([k, v]) => {
+                    if (v !== "" && v !== null && v !== undefined) params.append(k, v);
+                });
+            }
+
+            const textoOriginal = btnExportarVentas.innerHTML;
+            btnExportarVentas.disabled = true;
+            btnExportarVentas.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Exportando...';
+
+            try {
+                const ventas = await solicitar(`obtener_ventas.php?${params.toString()}`);
+                if (!ventas || ventas.length === 0) {
+                    alert("No se encontraron ventas que coincidan con los filtros seleccionados para exportar.");
+                    btnExportarVentas.disabled = false;
+                    btnExportarVentas.innerHTML = textoOriginal;
+                    return;
+                }
+
+                // Generar contenido CSV estructurado
+                const encabezados = [
+                    "ID Venta",
+                    "Ticket",
+                    "Fecha",
+                    "Cliente",
+                    "Telefono",
+                    "Direccion Entrega",
+                    "Producto / Presentacion",
+                    "Tipo Venta",
+                    "Cantidad Empaque",
+                    "Bolsas Fisicas",
+                    "Precio Unitario ($)",
+                    "Descuento (%)",
+                    "Monto Descuento ($)",
+                    "Total Cobrado ($)",
+                    "Vendedor / Operador",
+                    "Estado",
+                    "Fecha Entrega",
+                    "Motivo Cancelacion"
+                ];
+
+                const filas = [encabezados.map(h => `"${h.replace(/"/g, '""')}"`).join(";")];
+
+                ventas.forEach(v => {
+                    const empaque = (v.tipo_venta && v.tipo_venta !== "unidad") ? (v.cantidad_empaque || v.cantidad) : v.cantidad;
+                    const fila = [
+                        v.id || "",
+                        v.ticket_id || "",
+                        v.fecha || "",
+                        v.cliente || "Consumidor Final",
+                        v.cliente_telefono || "",
+                        v.cliente_direccion || "",
+                        v.producto_nombre || "",
+                        v.tipo_venta || "unidad",
+                        empaque,
+                        v.cantidad || 0,
+                        Number(v.precio_unitario || 0).toFixed(2),
+                        Number(v.descuento_porcentaje || 0).toFixed(1),
+                        Number(v.descuento_monto || 0).toFixed(2),
+                        Number(v.total || 0).toFixed(2),
+                        v.vendedor || "",
+                        v.estado || "ACTIVA",
+                        v.fecha_entrega || "",
+                        v.motivo_cancelacion || ""
+                    ];
+                    filas.push(fila.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"));
+                });
+
+                // BOM UTF-8 (\uFEFF) para abrir sin problemas de acentos en Microsoft Excel
+                const csvContent = "\uFEFF" + filas.join("\r\n");
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                const hoy = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `Ventas_Filtradas_${hoy}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert("Error al exportar ventas: " + err.message);
+            } finally {
+                btnExportarVentas.disabled = false;
+                btnExportarVentas.innerHTML = textoOriginal;
+            }
         });
     }
 }

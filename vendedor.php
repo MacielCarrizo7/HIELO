@@ -222,6 +222,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
                         <div class="col-12 d-flex flex-wrap gap-2 pt-2">
                             <button type="submit" class="btn btn-primary">Filtrar</button>
                             <button type="button" id="limpiarFiltros" class="btn btn-outline-secondary">Limpiar filtros</button>
+                            <button type="button" id="btnExportarVentasCsv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar Listado Filtrado (CSV)</button>
                         </div>
                     </form>
 

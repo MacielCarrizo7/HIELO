@@ -187,6 +187,20 @@ try {
     $precioAnterior = (float) ($productoActual["precio"] ?? 0);
     $diferenciaStock = $stock - $stockAnterior;
 
+    // Validación estricta de auditoría: si cambia el stock, el motivo es obligatorio
+    $motivo = trim($_POST["motivo"] ?? "");
+    if ($diferenciaStock !== 0 && $motivo === "") {
+        responderJson(["error" => "Es obligatorio registrar el motivo o justificación del cambio de stock (requerido por auditoría)."], 400);
+    }
+    if ($motivo === "") {
+        $motivo = "Actualización de ficha de producto";
+    }
+
+    $usuarioId = isset($_SESSION["usuario_id"]) ? (int) $_SESSION["usuario_id"] : null;
+    $usuarioNombre = trim(($_SESSION["usuario_nombre"] ?? "Admin") . " " . ($_SESSION["usuario_apellido"] ?? ""));
+    $usuarioRol = $_SESSION["usuario_rol"] ?? "admin";
+    $fechaActual = date("Y-m-d H:i:s");
+
     // Si no se proporcionó nuevo precio de costo, mantener el actual
     $precioCostoFinal = $precioCosto !== null ? $precioCosto : floatval($productoActual["precio_costo"] ?? 0);
 
@@ -210,10 +224,33 @@ try {
         "unidades_por_bulto" => $unidadesPorBulto,
         "fecha_vencimiento" => $vencimientoParam,
         "proveedor" => $proveedorParam,
-        "modificado_el" => date("Y-m-d H:i:s")
+        "ultimo_modificado_por" => $usuarioNombre,
+        "ultimo_motivo_stock" => $motivo,
+        "fecha_ultima_modificacion" => $fechaActual,
+        "modificado_el" => $fechaActual
     ];
 
     $firestore->actualizarCampos("productos", (string)$id, $camposActualizados);
+
+    // Registro de Auditoría Específica de Stock en Firestore
+    if ($diferenciaStock !== 0) {
+        $auditoriaId = $firestore->obtenerSiguienteId("contadores", "auditoria_stock", "ultimo_id");
+        $auditoriaDoc = [
+            "id" => $auditoriaId,
+            "producto_id" => $id,
+            "producto_nombre" => $nombre,
+            "stock_anterior" => $stockAnterior,
+            "stock_nuevo" => $stock,
+            "diferencia" => $diferenciaStock,
+            "tipo_cambio" => $diferenciaStock > 0 ? "INGRESO_AJUSTE" : "MERMA_O_DISMINUCION",
+            "motivo" => $motivo,
+            "usuario_id" => $usuarioId,
+            "usuario_nombre" => $usuarioNombre,
+            "usuario_rol" => $usuarioRol,
+            "fecha" => $fechaActual
+        ];
+        $firestore->guardarDocumento("auditoria_stock", (string)$auditoriaId, $auditoriaDoc);
+    }
 
     // Si hubo incremento de stock, registrar en Kardex de ingresos
     if ($diferenciaStock > 0) {
@@ -245,18 +282,19 @@ try {
             "numero_factura" => $facturaFinalMod,
             "sin_factura" => $sinFacturaMod,
             "usuario_id" => $usuarioId,
+            "usuario_nombre" => $usuarioNombre,
             "motivo" => $motivoIngreso,
-            "fecha" => date("Y-m-d H:i:s")
+            "fecha" => $fechaActual
         ];
 
         $firestore->guardarDocumento("ingresos_stock", (string)$ingresoId, $ingresoDatos);
     }
 
     // Registrar en trazabilidad de movimientos
-    $tipoMovimiento = ($diferenciaStock !== 0) ? "AJUSTE_STOCK" : "EDICION_DATOS";
-    $descripcionMov = "Modificación: Costo: $" . number_format($precioCostoFinal, 2) . " | Venta: $" . number_format($precioVenta, 2);
+    $tipoMovimiento = ($diferenciaStock !== 0) ? ($diferenciaStock > 0 ? "INGRESO_AJUSTE" : "MERMA_AJUSTE") : "EDICION_DATOS";
+    $descripcionMov = "Modificación por {$usuarioNombre}: Costo: $" . number_format($precioCostoFinal, 2) . " | Venta: $" . number_format($precioVenta, 2);
     if ($diferenciaStock !== 0) {
-        $descripcionMov .= " | Variación: " . ($diferenciaStock > 0 ? "+{$diferenciaStock}" : "{$diferenciaStock}") . " un. ($motivo)";
+        $descripcionMov .= " | Stock: {$stockAnterior} → {$stock} (" . ($diferenciaStock > 0 ? "+{$diferenciaStock}" : "{$diferenciaStock}") . " un.) - Motivo: {$motivo}";
     }
 
     FirestoreConexion::registrarMovimientoProducto(
@@ -278,8 +316,10 @@ try {
         "nombre" => $nombre,
         "precio_costo" => $precioCostoFinal,
         "precio_venta" => $precioVenta,
+        "stock" => $stock,
+        "modificado_por" => $usuarioNombre,
         "imagen_url" => $imagenFinal,
-        "mensaje" => "Producto modificado exitosamente."
+        "mensaje" => "Producto y stock actualizados con registro de auditoría."
     ]);
 } catch (Throwable $e) {
     error_log("Error al modificar producto: " . $e->getMessage());

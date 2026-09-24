@@ -296,6 +296,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                         <div class="col-12 d-flex flex-wrap gap-2 pt-2">
                             <button type="submit" class="btn btn-primary">Filtrar</button>
                             <button type="button" id="limpiarFiltros" class="btn btn-outline-secondary">Limpiar filtros</button>
+                            <button type="button" id="btnExportarVentasCsv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar Listado Filtrado (CSV)</button>
                             <span id="errorFiltros" class="text-danger small align-self-center"></span>
                         </div>
                     </form>
@@ -741,8 +742,8 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" for="editarProductoMotivo">Motivo del ajuste (opcional)</label>
-                            <input class="form-control" id="editarProductoMotivo" name="motivo" maxlength="255" placeholder="Ej: Ajuste de producción / recuento">
+                            <label class="form-label fw-semibold" for="editarProductoMotivo">Motivo / Justificación del cambio <span class="text-danger">*</span> <small class="text-muted">(Obligatorio por auditoría de stock)</small></label>
+                            <input class="form-control" id="editarProductoMotivo" name="motivo" maxlength="255" placeholder="Ej: Recuento físico en cámara, merma por rotura, compra de producción..." required>
                         </div>
 
                         <div class="mb-2">
