@@ -30,6 +30,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1 pt-3 pt-lg-0">
                     <a class="nav-link nav-link-app active" href="vendedor.php">Panel de Ventas</a>
                     <a class="nav-link nav-link-app" href="catalogo.php">Catálogo</a>
+                    <a class="nav-link nav-link-app" href="instagram_stories.php"><i class="bi bi-instagram me-1 text-danger"></i>Stories</a>
                     <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código con cámara">Escanear</button>
                     <a class="btn btn-primary btn-sm ms-lg-1" href="venta_form.php">Punto de Venta (POS)</a>
                     <a class="btn btn-outline-danger btn-sm ms-lg-1" href="logout.php">Cerrar sesión</a>

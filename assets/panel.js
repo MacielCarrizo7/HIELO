@@ -1176,8 +1176,11 @@ if (barcodeSelector) {
 });
 
 function generarCodigoEan13() {
-    // Prefijo 200 (Rango de uso interno local para fábrica / cámara de frío)
-    const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+    // Comienza obligatoriamente con el dígito "2" seguido de 11 dígitos aleatorios y dígito de control EAN-13
+    let primeros12 = "2";
+    for (let i = 0; i < 11; i++) {
+        primeros12 += Math.floor(Math.random() * 10).toString();
+    }
     let suma = 0;
     for (let i = 0; i < 12; i++) {
         const d = parseInt(primeros12.charAt(i), 10);

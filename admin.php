@@ -38,6 +38,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1 pt-3 pt-lg-0">
                     <a class="nav-link nav-link-app active" href="admin.php">Panel Principal</a>
                     <a class="nav-link nav-link-app" href="catalogo.php">Catálogo Visual</a>
+                    <a class="nav-link nav-link-app" href="instagram_stories.php"><i class="bi bi-instagram me-1 text-danger"></i>Stories</a>
                     <a class="nav-link nav-link-app" href="categorias.php">Categorías</a>
                     <a class="nav-link nav-link-app" href="registro.php">Usuarios</a>
                     <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código de barras con cámara">Escanear</button>

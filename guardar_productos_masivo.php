@@ -74,9 +74,12 @@ try {
 
         $vencimientoParam = ($fechaVencimiento !== "" && fechaIsoValida($fechaVencimiento)) ? $fechaVencimiento : null;
         
-        // Generar código de barras si viene vacío (Prefijo local 200)
+        // Generar código de barras si viene vacío (Inicia obligatoriamente con el dígito 2)
         if ($codigoBarras === "") {
-            $primeros12 = "200" . str_pad((string)random_int(100000000, 999999999), 9, "0", STR_PAD_LEFT);
+            $primeros12 = "2";
+            for ($i = 0; $i < 11; $i++) {
+                $primeros12 .= (string)random_int(0, 9);
+            }
             $suma = 0;
             for ($i = 0; $i < 12; $i++) {
                 $d = (int)$primeros12[$i];

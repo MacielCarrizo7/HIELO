@@ -510,7 +510,10 @@ $csrf = tokenCsrf();
             });
 
             document.getElementById("btnGenerarCb").addEventListener("click", () => {
-                const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                let primeros12 = "2";
+                for (let i = 0; i < 11; i++) {
+                    primeros12 += Math.floor(Math.random() * 10).toString();
+                }
                 let suma = 0;
                 for (let i = 0; i < 12; i++) {
                     const d = parseInt(primeros12.charAt(i), 10);
@@ -659,7 +662,10 @@ $csrf = tokenCsrf();
 
                 const inputCb = tr.querySelector(".masivo-cb");
                 tr.querySelector(".btn-gen-cb").addEventListener("click", () => {
-                    const primeros12 = "200" + Math.floor(Math.random() * 1000000000).toString().padStart(9, "0");
+                    let primeros12 = "2";
+                    for (let i = 0; i < 11; i++) {
+                        primeros12 += Math.floor(Math.random() * 10).toString();
+                    }
                     let suma = 0;
                     for (let i = 0; i < 12; i++) {
                         const d = parseInt(primeros12.charAt(i), 10);
