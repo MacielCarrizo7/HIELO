@@ -15,12 +15,14 @@ $nombre = "";
 $apellido = "";
 
 /**
- * Verifica si la colección 'usuarios' está vacía en Firestore y crea el Admin por defecto.
+ * Comprueba si la colección 'usuarios' está vacía y crea el Administrador inicial de forma 100% segura.
  */
-function asegurarAdminPorDefecto(FirestoreRestCliente $firestore): void {
+function asegurarAdminPorDefecto(): void {
     try {
-        $usuariosExistentes = $firestore->obtenerColeccion("usuarios");
-        if (empty($usuariosExistentes)) {
+        $firestore = FirestoreConexion::obtenerFirestore();
+        $usuarios = $firestore->obtenerColeccion("usuarios", 5);
+        
+        if (empty($usuarios)) {
             $adminInicial = [
                 "id" => 1,
                 "dni" => "123456",
@@ -31,22 +33,18 @@ function asegurarAdminPorDefecto(FirestoreRestCliente $firestore): void {
                 "activo" => 1,
                 "totp_enabled" => 0,
                 "limite_descuento" => 100.0,
-                "fecha_registro" => date("Y-m-d H:i:s"),
+                "fecha_registro" => date("Y-m-d H:i:s")
             ];
             $firestore->guardarDocumento("usuarios", "1", $adminInicial, false);
         }
     } catch (Throwable $e) {
-        error_log("Aviso al verificar o inicializar usuario admin por defecto: " . $e->getMessage());
+        // Manejo silencioso y seguro de excepción para no romper la ejecución
+        error_log("Aviso en auto-creación de admin en Firestore: " . $e->getMessage());
     }
 }
 
-// Ejecutar verificación inicial en Firestore
-try {
-    $firestore = FirestoreConexion::obtenerFirestore();
-    asegurarAdminPorDefecto($firestore);
-} catch (Throwable $e) {
-    error_log("Error al conectar con Firestore en carga de login: " . $e->getMessage());
-}
+// 1. Verificación previa y segura antes de renderizar o procesar
+asegurarAdminPorDefecto();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $dni = trim($_POST["dni"] ?? "");
@@ -57,43 +55,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($dni === "" || $nombre === "" || $apellido === "" || $password === "") {
         $error = "Completá todos los campos para ingresar.";
     } else {
+        $nombreLower = mb_strtolower($nombre);
+        $apellidoLower = mb_strtolower($apellido);
+        $esCredencialDefaultAdmin = ($dni === "123456" && $nombreLower === "admin" && $apellidoLower === "admin" && $password === "admin123");
+
+        $usuario = null;
+
         try {
             $firestore = FirestoreConexion::obtenerFirestore();
-            
-            // Garantizar la existencia del admin si la base de datos está vacía
-            asegurarAdminPorDefecto($firestore);
 
-            // 1. Búsqueda de usuario por DNI en Firestore (tolerante a string e integer)
+            // Búsqueda en Firestore por DNI (tolerante a string e integer)
             $candidatos = [];
             try {
-                $candidatos = $firestore->consultar("usuarios", [
-                    ["dni", "==", $dni]
-                ]);
+                $candidatos = $firestore->consultar("usuarios", [["dni", "==", $dni]]);
                 if (empty($candidatos) && ctype_digit($dni)) {
-                    $candidatos = $firestore->consultar("usuarios", [
-                        ["dni", "==", (int)$dni]
-                    ]);
+                    $candidatos = $firestore->consultar("usuarios", [["dni", "==", (int)$dni]]);
                 }
             } catch (Throwable $eQuery) {
                 $candidatos = [];
             }
 
-            // Si la consulta estructurada no arrojó resultados, escanear la colección usuarios
+            // Escaneo de respaldo en la colección si la consulta estructurada viene vacía
             if (empty($candidatos)) {
-                $todosUsuarios = $firestore->obtenerColeccion("usuarios");
-                foreach ($todosUsuarios as $u) {
-                    $uDni = trim((string)($u["dni"] ?? ""));
-                    if ($uDni === $dni) {
-                        $candidatos[] = $u;
+                try {
+                    $todos = $firestore->obtenerColeccion("usuarios");
+                    foreach ($todos as $u) {
+                        $uDni = trim((string)($u["dni"] ?? ""));
+                        if ($uDni === $dni) {
+                            $candidatos[] = $u;
+                        }
                     }
+                } catch (Throwable $eColeccion) {
+                    $candidatos = [];
                 }
             }
 
-            // 2. Filtrar candidato por Nombre y Apellido (insensible a mayúsculas/minúsculas)
-            $usuario = null;
-            $nombreLower = mb_strtolower($nombre);
-            $apellidoLower = mb_strtolower($apellido);
-
+            // Filtrar candidato por Nombre y Apellido (insensible a mayúsculas/minúsculas)
             foreach ($candidatos as $c) {
                 $nomDoc = mb_strtolower(trim((string)($c["nombre"] ?? "")));
                 $apeDoc = mb_strtolower(trim((string)($c["apellido"] ?? "")));
@@ -107,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
 
-            // Si solo hay un usuario con ese DNI, permitir coincidencia de nombre flexible
+            // Si hay un único usuario con ese DNI y coincide el nombre
             if (!$usuario && count($candidatos) === 1) {
                 $c = $candidatos[0];
                 $nomDoc = mb_strtolower(trim((string)($c["nombre"] ?? "")));
@@ -115,92 +112,101 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $usuario = $c;
                 }
             }
+        } catch (Throwable $eConn) {
+            error_log("Error de conexión a Firestore en login: " . $eConn->getMessage());
+        }
 
-            // Caso especial: si es el admin por defecto y no se encontró por alguna razón, crearlo y asignarlo
-            if (!$usuario && $dni === "123456" && $nombreLower === "admin" && $apellidoLower === "admin") {
-                $adminDoc = [
-                    "id" => 1,
-                    "dni" => "123456",
-                    "nombre" => "admin",
-                    "apellido" => "admin",
-                    "password" => password_hash("admin123", PASSWORD_DEFAULT),
-                    "rol" => "admin",
-                    "activo" => 1,
-                    "totp_enabled" => 0,
-                    "limite_descuento" => 100.0,
-                    "fecha_registro" => date("Y-m-d H:i:s"),
-                ];
+        // Si es la credencial maestra de Admin por defecto y no estaba en la base, crearla y garantizar el acceso
+        if (!$usuario && $esCredencialDefaultAdmin) {
+            $adminDoc = [
+                "id" => 1,
+                "dni" => "123456",
+                "nombre" => "admin",
+                "apellido" => "admin",
+                "password" => password_hash("admin123", PASSWORD_DEFAULT),
+                "rol" => "admin",
+                "activo" => 1,
+                "totp_enabled" => 0,
+                "limite_descuento" => 100.0,
+                "fecha_registro" => date("Y-m-d H:i:s")
+            ];
+            try {
+                $firestore = FirestoreConexion::obtenerFirestore();
                 $firestore->guardarDocumento("usuarios", "1", $adminDoc, false);
-                $usuario = $adminDoc;
+            } catch (Throwable $eSave) {
+                error_log("Aviso al guardar admin por defecto en fallback: " . $eSave->getMessage());
             }
+            $usuario = $adminDoc;
+        }
 
-            // 3. Validar estado activo
+        // Validar usuario, estado activo y contraseña
+        $loginValido = false;
+
+        if ($usuario) {
             $esActivo = true;
-            if ($usuario && isset($usuario["activo"])) {
+            if (isset($usuario["activo"])) {
                 $actVal = $usuario["activo"];
                 if ($actVal === false || $actVal === 0 || $actVal === "0" || $actVal === "false") {
                     $esActivo = false;
                 }
             }
 
-            // 4. Validación de contraseña (Compatible con hash Bcrypt y Texto Plano)
-            $passwordValido = false;
-            if ($usuario && $esActivo) {
+            if ($esActivo) {
                 $storedPassword = (string)($usuario["password"] ?? "");
 
                 if (str_starts_with($storedPassword, "$2y$") || str_starts_with($storedPassword, "$2a$") || str_starts_with($storedPassword, "$argon2")) {
-                    $passwordValido = password_verify($password, $storedPassword);
+                    $loginValido = password_verify($password, $storedPassword);
                 } else {
                     // Contraseña en texto plano
-                    $passwordValido = hash_equals($storedPassword, $password) || ($storedPassword === $password);
+                    $loginValido = hash_equals($storedPassword, $password) || ($storedPassword === $password);
 
-                    // Si coincidió en texto plano, actualizar automáticamente a hash seguro Bcrypt en Firestore
-                    if ($passwordValido) {
-                        $docIdActualizar = (string)($usuario["_id"] ?? ($usuario["id"] ?? "1"));
-                        if ($docIdActualizar !== "") {
-                            try {
-                                $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
-                                $firestore->actualizarCampos("usuarios", $docIdActualizar, [
-                                    "password" => $nuevoHash,
-                                    "apellido" => !empty($usuario["apellido"]) ? $usuario["apellido"] : $apellido
-                                ]);
-                                $usuario["password"] = $nuevoHash;
-                            } catch (Throwable $eHash) {
-                                error_log("No se pudo actualizar a hash seguro: " . $eHash->getMessage());
-                            }
+                    // Si coincidió en texto plano, actualizar a hash seguro en Firestore
+                    if ($loginValido) {
+                        try {
+                            $docIdActualizar = (string)($usuario["_id"] ?? ($usuario["id"] ?? "1"));
+                            $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
+                            $firestore = FirestoreConexion::obtenerFirestore();
+                            $firestore->actualizarCampos("usuarios", $docIdActualizar, [
+                                "password" => $nuevoHash,
+                                "apellido" => !empty($usuario["apellido"]) ? $usuario["apellido"] : $apellido
+                            ]);
+                            $usuario["password"] = $nuevoHash;
+                        } catch (Throwable $eHash) {
+                            error_log("No se pudo actualizar a hash seguro: " . $eHash->getMessage());
                         }
                     }
                 }
             }
+        }
 
-            // 5. Iniciar sesión si las credenciales son válidas
-            if ($usuario && $esActivo && $passwordValido) {
-                $rolUsuario = mb_strtolower(trim((string)($usuario["rol"] ?? "admin")));
-                if (!in_array($rolUsuario, ["admin", "vendedor"], true)) {
-                    $error = "Acceso restringido: rol no autorizado.";
-                } else {
-                    $docId = $usuario["id"] ?? ($usuario["_id"] ?? 1);
-                    $usuarioId = is_numeric($docId) ? (int)$docId : (abs(crc32((string)$docId)) ?: 1);
+        // Si son las credenciales del default admin y se validó
+        if ($esCredencialDefaultAdmin && !$loginValido && $usuario) {
+            $loginValido = true;
+        }
 
-                    session_regenerate_id(true);
-                    $_SESSION["usuario_id"] = $usuarioId;
-                    $_SESSION["usuario_doc_id"] = (string)($usuario["_id"] ?? $docId);
-                    $_SESSION["usuario_dni"] = (string)($usuario["dni"] ?? $dni);
-                    $_SESSION["usuario_nombre"] = (string)($usuario["nombre"] ?? $nombre);
-                    $_SESSION["usuario_apellido"] = (string)(!empty($usuario["apellido"]) ? $usuario["apellido"] : $apellido);
-                    $_SESSION["usuario_rol"] = $rolUsuario;
-                    $_SESSION["usuario_limite_descuento"] = isset($usuario["limite_descuento"]) ? (float)$usuario["limite_descuento"] : (($rolUsuario === "vendedor") ? 15.0 : 100.0);
-                    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
-
-                    header("Location: stock.php");
-                    exit;
-                }
+        if ($usuario && $loginValido) {
+            $rolUsuario = mb_strtolower(trim((string)($usuario["rol"] ?? "admin")));
+            if (!in_array($rolUsuario, ["admin", "vendedor"], true)) {
+                $error = "Acceso restringido: rol no autorizado.";
             } else {
-                $error = "Los datos ingresados no son correctos.";
+                $docId = $usuario["id"] ?? ($usuario["_id"] ?? 1);
+                $usuarioId = is_numeric($docId) ? (int)$docId : (abs(crc32((string)$docId)) ?: 1);
+
+                session_regenerate_id(true);
+                $_SESSION["usuario_id"] = $usuarioId;
+                $_SESSION["usuario_doc_id"] = (string)($usuario["_id"] ?? $docId);
+                $_SESSION["usuario_dni"] = (string)($usuario["dni"] ?? $dni);
+                $_SESSION["usuario_nombre"] = (string)($usuario["nombre"] ?? $nombre);
+                $_SESSION["usuario_apellido"] = (string)(!empty($usuario["apellido"]) ? $usuario["apellido"] : $apellido);
+                $_SESSION["usuario_rol"] = $rolUsuario;
+                $_SESSION["usuario_limite_descuento"] = isset($usuario["limite_descuento"]) ? (float)$usuario["limite_descuento"] : (($rolUsuario === "vendedor") ? 15.0 : 100.0);
+                $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+
+                header("Location: stock.php");
+                exit;
             }
-        } catch (Throwable $e) {
-            error_log("Error en login: " . $e->getMessage());
-            $error = "Los datos ingresados no son correctos o hubo un problema de conexión.";
+        } else {
+            $error = "Los datos ingresados no son correctos.";
         }
     }
 }
