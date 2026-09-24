@@ -1697,13 +1697,13 @@ async function cargarVentas(filtros = {}) {
             const grupo = document.createElement("div");
             grupo.className = "d-inline-flex flex-wrap gap-1 justify-content-end";
 
-            // Botón de Remito PDF disponible siempre para ventas activas / entregadas / modificadas
+            // Botón estilizado para ver y Descargar Remito oficial en PDF
             const btnRemito = document.createElement("a");
             btnRemito.href = `generar_remito.php?id=${venta.id}${venta.ticket_id ? `&ticket_id=${encodeURIComponent(venta.ticket_id)}` : ''}`;
             btnRemito.target = "_blank";
-            btnRemito.className = "btn btn-outline-dark btn-sm";
-            btnRemito.title = "Generar / Ver Remito PDF";
-            btnRemito.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Remito';
+            btnRemito.className = "btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm";
+            btnRemito.title = "Descargar Remito en PDF / Comprobante de Entrega";
+            btnRemito.innerHTML = '<i class="bi bi-file-earmark-pdf-fill text-danger"></i> <span>Descargar Remito</span>';
             grupo.appendChild(btnRemito);
 
             if (!esCancelada) {
