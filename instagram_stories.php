@@ -160,9 +160,7 @@ try {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.4);
             padding: 4px 12px;
             border-radius: 50px;
@@ -170,12 +168,12 @@ try {
             font-weight: 800;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             color: #ffffff;
         }
 
         /* =======================================================
-           TÍTULO PRINCIPAL 3D CON RELIEVE Y BRILLO
+           TÍTULO PRINCIPAL 3D CON RELIEVE Y SOMBRAS PURAS
         ======================================================= */
         .story-title-3d {
             font-family: var(--story-font-impact);
@@ -186,12 +184,12 @@ try {
             line-height: 1.05;
             margin: 4px 0 2px 0;
             text-align: center;
-            background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 30%, #bae6fd 65%, #38bdf8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 0px #0284c7) 
-                    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85))
-                    drop-shadow(0 0 16px rgba(56, 189, 248, 0.9));
+            color: #ffffff;
+            text-shadow: 
+                0 2px 0 #0284c7,
+                0 3px 0 #0369a1,
+                0 5px 12px rgba(0, 0, 0, 0.9),
+                0 0 20px rgba(56, 189, 248, 0.85);
         }
 
         .story-subtitle {
@@ -201,39 +199,24 @@ try {
             font-weight: 700;
             letter-spacing: 0.02em;
             margin-bottom: 4px;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.6);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.7);
         }
 
-        /* =======================================================
-           GRÁFICO CENTRAL: DOS BOLSAS DE HIELO TRANSPARENTES REALES
-        ======================================================= */
+        /* Espacio Central para lucir la foto */
         .ice-bags-stage {
             position: relative;
             width: 100%;
-            height: 155px;
+            height: 165px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 2px 0 6px;
-        }
-
-        .ice-bags-svg-wrapper {
-            width: 100%;
-            max-width: 320px;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
         }
 
         /* =======================================================
-           RECUADRO DE PRECIOS REALES FIRESTORE (Glassmorphism)
+           RECUADRO DE PRECIOS REALES FIRESTORE
         ======================================================= */
         .story-pricing-box {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(15, 23, 42, 0.82);
             border: 1px solid rgba(255, 255, 255, 0.35);
             border-radius: 16px;
             padding: 9px 11px;
@@ -307,10 +290,8 @@ try {
             font-family: var(--story-font-impact);
             font-size: 1.3rem;
             font-weight: 900;
-            background: linear-gradient(180deg, #ffffff 0%, #38bdf8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+            color: #38bdf8;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(56, 189, 248, 0.5);
             white-space: nowrap;
         }
 
@@ -318,9 +299,7 @@ try {
            BANNER FOOTER WHATSAPP & CONTACTO
         ======================================================= */
         .story-footer-cta {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 14px;
             padding: 8px 10px;
@@ -819,32 +798,68 @@ try {
                 }
             }
 
-            // 2. Renderizar elementos con html2canvas en HD
+            // 2. Renderizar elementos con html2canvas configurado para evitar artefactos
             const canvasRender = await html2canvas(elemento, {
-                scale: 3,
+                scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 logging: false,
-                backgroundColor: null
+                backgroundColor: null,
+                onclone: (clonedDoc) => {
+                    const clonedExport = clonedDoc.getElementById("storyCanvasExport");
+                    if (clonedExport) {
+                        // Ocultar imagen de fondo y capa de overlay en el clon (se componen directamente en el canvas 2D)
+                        const clonedBg = clonedDoc.getElementById("storyRealBgImg");
+                        if (clonedBg) clonedBg.style.display = "none";
+
+                        const clonedOverlay = clonedDoc.getElementById("storyOverlayLayer");
+                        if (clonedOverlay) clonedOverlay.style.display = "none";
+
+                        // Limpiar filtros y propiedades que generan cajas blancas en html2canvas
+                        clonedExport.querySelectorAll("*").forEach(node => {
+                            node.style.backdropFilter = "none";
+                            node.style.webkitBackdropFilter = "none";
+                            node.style.webkitBackgroundClip = "unset";
+                            node.style.backgroundClip = "unset";
+                            node.style.webkitTextFillColor = "unset";
+                            node.style.filter = "none";
+                        });
+
+                        // Título 3D ultra limpio con sombras puras
+                        const clonedTitle = clonedDoc.getElementById("storyPreviewTitulo");
+                        if (clonedTitle) {
+                            clonedTitle.style.color = "#ffffff";
+                            clonedTitle.style.background = "none";
+                            clonedTitle.style.textShadow = "0 2px 0 #0284c7, 0 3px 0 #0369a1, 0 5px 12px rgba(0,0,0,0.9), 0 0 16px rgba(56, 189, 248, 0.85)";
+                        }
+
+                        // Precios celestes brillantes sin cajas ni gradientes recortados
+                        clonedExport.querySelectorAll(".story-prod-price").forEach(el => {
+                            el.style.color = "#38bdf8";
+                            el.style.background = "none";
+                            el.style.textShadow = "0 2px 6px rgba(0,0,0,0.85), 0 0 10px rgba(56, 189, 248, 0.4)";
+                        });
+                    }
+                }
             });
 
-            // 3. Crear lienzo final en alta definicion y componer la imagen de fondo real
+            // 3. Crear lienzo final en alta definición y componer la imagen de fondo real con exactitud
             const finalCanvas = document.createElement("canvas");
             finalCanvas.width = canvasRender.width;
             finalCanvas.height = canvasRender.height;
             const ctx = finalCanvas.getContext("2d");
 
             if (imgFondo) {
-                // Dibujar la imagen de fondo en toda la proporcion 9:16
+                // Dibujar la imagen de fondo en toda la proporción vertical 9:16
                 ctx.drawImage(imgFondo, 0, 0, finalCanvas.width, finalCanvas.height);
                 
-                // Aplicar overlay oscuro para asegurar alto contraste en textos
+                // Aplicar overlay oscuro uniforme
                 const overlayEl = document.getElementById("storyOverlayLayer");
                 ctx.fillStyle = (overlayEl && overlayEl.style.backgroundColor) ? overlayEl.style.backgroundColor : "rgba(0, 0, 0, 0.42)";
                 ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
             }
 
-            // Dibujar encima los elementos de la historia (título 3D, badges, precios de Firestore, WhatsApp)
+            // Dibujar encima con transparencia perfecta todos los textos, badges y precios
             ctx.drawImage(canvasRender, 0, 0);
 
             return finalCanvas;
