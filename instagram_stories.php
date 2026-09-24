@@ -749,11 +749,14 @@ try {
 
                         <!-- Botones de Acción -->
                         <div class="d-flex flex-column gap-2 w-100" style="max-width: 380px;">
-                            <button type="button" class="btn btn-success btn-lg fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDescargarHistoriaPng">
-                                <i class="bi bi-cloud-arrow-down-fill fs-5"></i> Descargar Historia PNG HD
+                            <button type="button" class="btn btn-success btn-lg fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnCompartirWhatsapp">
+                                <i class="bi bi-whatsapp fs-5"></i> Compartir por WhatsApp
                             </button>
-                            <button type="button" class="btn btn-outline-dark fw-semibold" id="btnCopiarCaption">
-                                <i class="bi bi-card-text me-1"></i> Copiar Texto / Caption para Instagram
+                            <button type="button" class="btn btn-primary fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnDescargarHistoriaPng">
+                                <i class="bi bi-cloud-arrow-down-fill fs-5"></i> Descargar Imagen PNG HD
+                            </button>
+                            <button type="button" class="btn btn-outline-dark fw-semibold d-flex align-items-center justify-content-center gap-2" id="btnCopiarCaption">
+                                <i class="bi bi-card-text me-1"></i> Copiar Texto / Caption
                             </button>
                         </div>
 
@@ -762,6 +765,39 @@ try {
 
             </div>
 
+        </div>
+
+        <!-- Modal de Vista Previa y Respaldo para iPhone / Dispositivos Móviles -->
+        <div class="modal fade" id="modalPreviewIos" tabindex="-1" aria-labelledby="modalPreviewIosLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="modal-header bg-dark text-white border-0 py-3">
+                        <h5 class="modal-title fs-6 fw-bold" id="modalPreviewIosLabel">
+                            <i class="bi bi-phone-fill text-info me-2"></i> Imagen para iPhone / Celular
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body text-center p-3">
+                        <div class="alert alert-primary py-2 px-3 small d-flex align-items-center justify-content-center gap-2 mb-3 text-start">
+                            <i class="bi bi-hand-index-thumb fs-4 text-primary"></i>
+                            <div>
+                                <strong>En iPhone:</strong> Mantén presionada la imagen y selecciona <strong>"Guardar en Fotos"</strong> o <strong>"Compartir"</strong>.
+                            </div>
+                        </div>
+                        <div class="position-relative d-inline-block shadow-sm rounded-3 overflow-hidden bg-dark" style="max-height: 480px;">
+                            <img id="imgIosPreview" src="" alt="Historia Instagram Hielo" class="img-fluid rounded-3" style="max-height: 470px; object-fit: contain;">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 d-flex flex-column gap-2 pt-0 pb-3">
+                        <button type="button" class="btn btn-success w-100 fw-bold py-2" id="btnModalShareWa">
+                            <i class="bi bi-whatsapp me-1"></i> Abrir Chat de WhatsApp
+                        </button>
+                        <button type="button" class="btn btn-light border btn-sm w-100" data-bs-dismiss="modal">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </main>
@@ -889,43 +925,10 @@ try {
             actualizarStory();
         });
 
-        // 4. Descargar Historia en Formato PNG Alta Resolución (1080x1920)
-        document.getElementById("btnDescargarHistoriaPng").addEventListener("click", async () => {
-            const btn = document.getElementById("btnDescargarHistoriaPng");
-            const textoOriginal = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Generando PNG HD...`;
-
-            try {
-                const elemento = document.getElementById("storyCanvasExport");
-                
-                // Renderizar con html2canvas en ultra alta definición (escala 3x para 1080x1920 nítido)
-                const canvas = await html2canvas(elemento, {
-                    scale: 3,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: null
-                });
-
-                const link = document.createElement("a");
-                const fechaHoy = new Date().toISOString().slice(0, 10);
-                link.download = `Historia_Instagram_Hielo_${fechaHoy}.png`;
-                link.href = canvas.toDataURL("image/png");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-            } catch (err) {
-                console.error(err);
-                alert("Error al exportar la historia: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = textoOriginal;
-            }
-        });
-
-        // 5. Copiar Caption para Instagram
-        document.getElementById("btnCopiarCaption").addEventListener("click", async () => {
+        // =======================================================
+        // UTILIDADES DE RENDERIZADO Y EXPORTACIÓN HD
+        // =======================================================
+        function obtenerCaptionTexto() {
             let listaPrecios = "";
             const checkboxes = document.querySelectorAll(".check-prod-story:checked");
             checkboxes.forEach(chk => {
@@ -936,18 +939,165 @@ try {
                 }
             });
 
-            const caption = 
-                `❄️ *${inputTitulo.value.toUpperCase()} - PRECIOS DE FÁBRICA* ❄️\n\n` +
-                `${inputSubtitulo.value}\n\n` +
-                `📋 *Precios vigentes:*\n` +
-                `${listaPrecios}\n` +
-                `🚚 *Reparto y Pedidos:* ${inputWhatsapp.value}\n` +
-                `📍 ${inputUbicacion.value}\n\n` +
-                `#Hielo #FabricaDeHielo #Rolitos #BolsasDeHielo #Bebidas #Eventos #Gastronomia #Verano`;
+            return `❄️ *${(inputTitulo.value || "HIELO EN CUBOS").toUpperCase()} - PRECIOS DE FÁBRICA* ❄️\n\n` +
+                   `${inputSubtitulo.value || ""}\n\n` +
+                   `📋 *Precios vigentes:*\n` +
+                   `${listaPrecios}\n` +
+                   `🚚 *Reparto y Pedidos:* ${inputWhatsapp.value || ""}\n` +
+                   `📍 ${inputUbicacion.value || ""}\n\n` +
+                   `#Hielo #FabricaDeHielo #Rolitos #BolsasDeHielo #Bebidas #Eventos #Gastronomia #Verano`;
+        }
+
+        async function renderizarCanvasStory() {
+            const elemento = document.getElementById("storyCanvasExport");
+            return await html2canvas(elemento, {
+                scale: 3,
+                useCORS: true,
+                logging: false,
+                backgroundColor: null
+            });
+        }
+
+        function canvasToBlobAsync(canvas) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(blob => {
+                    if (blob) resolve(blob);
+                    else reject(new Error("No se pudo procesar la imagen generada."));
+                }, "image/png");
+            });
+        }
+
+        function mostrarModalIosFallback(dataUrl, caption) {
+            const modalEl = document.getElementById("modalPreviewIos");
+            const imgEl = document.getElementById("imgIosPreview");
+            const btnWaModal = document.getElementById("btnModalShareWa");
+
+            if (imgEl) imgEl.src = dataUrl;
+            if (btnWaModal) {
+                btnWaModal.onclick = () => {
+                    const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
+                    window.open(urlWa, "_blank");
+                };
+            }
+
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        // =======================================================
+        // 4. BOTÓN: COMPARTIR POR WHATSAPP (Soporte Nativo iOS / Android)
+        // =======================================================
+        document.getElementById("btnCompartirWhatsapp").addEventListener("click", async () => {
+            const btn = document.getElementById("btnCompartirWhatsapp");
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Preparando para WhatsApp...`;
+
+            const caption = obtenerCaptionTexto();
+
+            try {
+                const canvas = await renderizarCanvasStory();
+                const blob = await canvasToBlobAsync(canvas);
+                const dataUrl = canvas.toDataURL("image/png");
+                const file = new File([blob], `Historia_Hielo_${Date.now()}.png`, { type: "image/png" });
+
+                // 1. Intentar compartir con la API Nativa de Web Share (iOS Safari 15+ y navegadores móviles)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: inputTitulo.value || "Historia Fábrica de Hielo",
+                            text: caption
+                        });
+                        return; // Compartido exitosamente mediante el menú nativo
+                    } catch (shareErr) {
+                        if (shareErr.name === "AbortError") {
+                            return; // El usuario cerró el modal nativo voluntariamente
+                        }
+                        console.warn("Fallo Web Share con archivo, ejecutando fallback:", shareErr);
+                    }
+                }
+
+                // 2. Fallback: Mostrar modal con imagen para guardar/compartir en iOS y abrir WhatsApp
+                mostrarModalIosFallback(dataUrl, caption);
+                
+                const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
+                window.open(urlWa, "_blank");
+
+            } catch (err) {
+                console.error(err);
+                alert("Error al procesar la imagen para compartir: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        });
+
+        // =======================================================
+        // 5. BOTÓN: DESCARGAR HISTORIA PNG HD (Con Adaptación para iPhone)
+        // =======================================================
+        document.getElementById("btnDescargarHistoriaPng").addEventListener("click", async () => {
+            const btn = document.getElementById("btnDescargarHistoriaPng");
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Generando PNG HD...`;
+
+            try {
+                const canvas = await renderizarCanvasStory();
+                const dataUrl = canvas.toDataURL("image/png");
+                const fechaHoy = new Date().toISOString().slice(0, 10);
+                const fileName = `Historia_Instagram_Hielo_${fechaHoy}.png`;
+
+                // Detección de dispositivos iOS (iPhone / iPad)
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+                if (isIOS) {
+                    const blob = await canvasToBlobAsync(canvas);
+                    const file = new File([blob], fileName, { type: "image/png" });
+
+                    // En iOS, navigator.share permite seleccionar directamente "Guardar Imagen" en Fotos
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: "Historia de Hielo"
+                            });
+                            return;
+                        } catch (shareErr) {
+                            if (shareErr.name === "AbortError") return;
+                        }
+                    }
+
+                    // Si no está disponible o falla, desplegar el modal interactivo para iOS
+                    mostrarModalIosFallback(dataUrl, obtenerCaptionTexto());
+                } else {
+                    // Descarga directa tradicional para PC y Android
+                    const link = document.createElement("a");
+                    link.download = fileName;
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Error al exportar la historia: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        });
+
+        // =======================================================
+        // 6. BOTÓN: COPIAR CAPTION PARA INSTAGRAM
+        // =======================================================
+        document.getElementById("btnCopiarCaption").addEventListener("click", async () => {
+            const caption = obtenerCaptionTexto();
 
             try {
                 await navigator.clipboard.writeText(caption);
-                alert("¡Texto y pie de foto copiado al portapapeles listo para pegar en Instagram!");
+                alert("¡Texto y pie de foto copiado al portapapeles listo para pegar en Instagram o WhatsApp!");
             } catch {
                 prompt("Copia el siguiente texto:", caption);
             }
