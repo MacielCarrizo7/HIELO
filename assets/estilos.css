@@ -857,5 +857,18 @@ main, .container, .container-fluid, .tab-content, .tab-pane, .seccion-card {
     }
 }
 
+/* =======================================================
+   ESTILOS DE HISTORIAS DE INSTAGRAM (FONDO OBLIGATORIO)
+   ======================================================= */
+.story-canvas {
+    background-image: url('FONDO HISTORIA.jpg') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    background-blend-mode: overlay !important;
+}
+
+
 
 

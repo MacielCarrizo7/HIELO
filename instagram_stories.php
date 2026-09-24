@@ -515,7 +515,7 @@ try {
                         <!-- Marco de Celular con Story -->
                         <div class="phone-frame mb-3">
                             <div class="phone-screen">
-                                <div id="storyCanvasExport" class="story-canvas overlay-standard">
+                                <div id="storyCanvasExport" class="story-canvas overlay-standard" style="background-image: url('assets/FONDO HISTORIA.jpg') !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; background-color: rgba(0, 0, 0, 0.5); background-blend-mode: overlay;">
                                     
                                     <!-- Escarcha de fondo -->
                                     <div class="frost-overlay"></div>
@@ -825,8 +825,16 @@ try {
         const previewContainerProds = document.getElementById("storyPreviewProductosContainer");
 
         function actualizarStory() {
-            // 1. Tema de fondo
-            canvasStory.className = `story-canvas ${selectTema.value}`;
+            // 1. Fondo e imagen obligatoria
+            if (canvasStory) {
+                canvasStory.style.backgroundImage = "url('assets/FONDO HISTORIA.jpg')";
+                canvasStory.style.backgroundSize = "cover";
+                canvasStory.style.backgroundPosition = "center center";
+                canvasStory.style.backgroundRepeat = "no-repeat";
+                canvasStory.style.backgroundBlendMode = "overlay";
+            }
+            const overlayClass = selectTema ? selectTema.value : "overlay-standard";
+            canvasStory.className = `story-canvas ${overlayClass}`;
 
             // 2. Textos
             previewBadge.textContent = inputBadge.value || "❄️ FÁBRICA DIRECTA";
