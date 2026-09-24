@@ -186,42 +186,50 @@ try {
 
     // Registrar en Kardex de ingresos si stock > 0
     if ($totalUnidades > 0) {
-        $ingresoId = $firestore->obtenerSiguienteId("contadores", "ingresos", "ultimo_id");
-        $ingresoDatos = [
-            "id" => $ingresoId,
-            "producto_id" => $productoId,
-            "producto_nombre" => $nombre,
-            "cantidad" => $stock,
-            "presentacion" => $presentacion,
-            "unidades_por_bulto" => $unidadesPorBulto,
-            "total_unidades" => $totalUnidades,
-            "precio_unitario" => $precioVenta,
-            "precio_costo" => $precioCosto,
-            "precio_venta" => $precioVenta,
-            "proveedor" => $proveedorParam,
-            "fecha_vencimiento" => $vencimientoParam,
-            "numero_factura" => $numeroFacturaFinal,
-            "sin_factura" => $sinFactura,
-            "usuario_id" => $usuarioId,
-            "motivo" => "Alta inicial de producto" . ($numeroFacturaFinal ? " (Factura: {$numeroFacturaFinal})" : ""),
-            "fecha" => date("Y-m-d H:i:s")
-        ];
-        $firestore->guardarDocumento("ingresos_stock", (string)$ingresoId, $ingresoDatos);
+        try {
+            $ingresoId = $firestore->obtenerSiguienteId("contadores", "ingresos", "ultimo_id");
+            $ingresoDatos = [
+                "id" => $ingresoId,
+                "producto_id" => $productoId,
+                "producto_nombre" => $nombre,
+                "cantidad" => $stock,
+                "presentacion" => $presentacion,
+                "unidades_por_bulto" => $unidadesPorBulto,
+                "total_unidades" => $totalUnidades,
+                "precio_unitario" => $precioVenta,
+                "precio_costo" => $precioCosto,
+                "precio_venta" => $precioVenta,
+                "proveedor" => $proveedorParam,
+                "fecha_vencimiento" => $vencimientoParam,
+                "numero_factura" => $numeroFacturaFinal,
+                "sin_factura" => $sinFactura,
+                "usuario_id" => $usuarioId,
+                "motivo" => "Alta inicial de producto" . ($numeroFacturaFinal ? " (Factura: {$numeroFacturaFinal})" : ""),
+                "fecha" => date("Y-m-d H:i:s")
+            ];
+            $firestore->guardarDocumento("ingresos_stock", (string)$ingresoId, $ingresoDatos);
+        } catch (Throwable $eIngreso) {
+            error_log("Aviso: no se pudo registrar ingreso_stock: " . $eIngreso->getMessage());
+        }
     }
 
     // Registrar en trazabilidad de movimientos de producto
-    FirestoreConexion::registrarMovimientoProducto(
-        productoId: $productoId,
-        tipo: "ALTA_INICIAL",
-        descripcion: "Alta inicial del producto con stock de {$totalUnidades} un. Costo: $" . number_format($precioCosto, 2) . " | Venta: $" . number_format($precioVenta, 2),
-        cantidadAnterior: 0,
-        cantidadNueva: $totalUnidades,
-        diferencia: $totalUnidades,
-        precioAnterior: null,
-        precioNuevo: $precioVenta,
-        usuarioId: $usuarioId,
-        usuarioNombre: $usuarioNombre
-    );
+    try {
+        FirestoreConexion::registrarMovimientoProducto(
+            productoId: $productoId,
+            tipo: "ALTA_INICIAL",
+            descripcion: "Alta inicial del producto con stock de {$totalUnidades} un. Costo: $" . number_format($precioCosto, 2) . " | Venta: $" . number_format($precioVenta, 2),
+            cantidadAnterior: 0,
+            cantidadNueva: $totalUnidades,
+            diferencia: $totalUnidades,
+            precioAnterior: null,
+            precioNuevo: $precioVenta,
+            usuarioId: $usuarioId,
+            usuarioNombre: $usuarioNombre
+        );
+    } catch (Throwable $eMov) {
+        error_log("Aviso: no se pudo registrar movimiento: " . $eMov->getMessage());
+    }
 
     responderJson([
         "success" => true,

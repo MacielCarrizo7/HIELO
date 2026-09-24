@@ -108,42 +108,50 @@ try {
 
         // Registrar en ingresos_stock si hay stock
         if ($totalUnidades > 0) {
-            $ingresoId = $firestore->obtenerSiguienteId("contadores", "ingresos", "ultimo_id");
-            $ingresoDoc = [
-                "id" => $ingresoId,
-                "producto_id" => $productoId,
-                "producto_nombre" => $nombre,
-                "cantidad" => $stock,
-                "presentacion" => $presentacion,
-                "unidades_por_bulto" => $unidadesPorBulto,
-                "total_unidades" => $totalUnidades,
-                "precio_unitario" => $precioVenta,
-                "precio_costo" => $precioCosto,
-                "precio_venta" => $precioVenta,
-                "proveedor" => $proveedorParam,
-                "fecha_vencimiento" => $vencimientoParam,
-                "numero_factura" => $facturaFinalLote,
-                "sin_factura" => $sinFacturaLote,
-                "usuario_id" => $usuarioId,
-                "motivo" => "Alta masiva por lote (" . ($proveedorParam ? "Proveedor: {$proveedorParam}" : "Lote proveedor") . ")" . ($facturaFinalLote ? " (Factura: {$facturaFinalLote})" : ""),
-                "fecha" => date("Y-m-d H:i:s")
-            ];
-            $firestore->guardarDocumento("ingresos_stock", (string)$ingresoId, $ingresoDoc);
+            try {
+                $ingresoId = $firestore->obtenerSiguienteId("contadores", "ingresos", "ultimo_id");
+                $ingresoDoc = [
+                    "id" => $ingresoId,
+                    "producto_id" => $productoId,
+                    "producto_nombre" => $nombre,
+                    "cantidad" => $stock,
+                    "presentacion" => $presentacion,
+                    "unidades_por_bulto" => $unidadesPorBulto,
+                    "total_unidades" => $totalUnidades,
+                    "precio_unitario" => $precioVenta,
+                    "precio_costo" => $precioCosto,
+                    "precio_venta" => $precioVenta,
+                    "proveedor" => $proveedorParam,
+                    "fecha_vencimiento" => $vencimientoParam,
+                    "numero_factura" => $facturaFinalLote,
+                    "sin_factura" => $sinFacturaLote,
+                    "usuario_id" => $usuarioId,
+                    "motivo" => "Alta masiva por lote (" . ($proveedorParam ? "Proveedor: {$proveedorParam}" : "Lote proveedor") . ")" . ($facturaFinalLote ? " (Factura: {$facturaFinalLote})" : ""),
+                    "fecha" => date("Y-m-d H:i:s")
+                ];
+                $firestore->guardarDocumento("ingresos_stock", (string)$ingresoId, $ingresoDoc);
+            } catch (Throwable $eIngreso) {
+                error_log("Aviso: no se pudo registrar en ingresos_stock: " . $eIngreso->getMessage());
+            }
         }
 
         // Trazabilidad de movimientos
-        FirestoreConexion::registrarMovimientoProducto(
-            productoId: $productoId,
-            tipo: "ALTA_INICIAL",
-            descripcion: "Alta masiva por lote con stock de {$totalUnidades} un. Costo: $" . number_format($precioCosto, 2) . " | Venta: $" . number_format($precioVenta, 2) . ($proveedorParam ? " [Proveedor: {$proveedorParam}]" : ""),
-            cantidadAnterior: 0,
-            cantidadNueva: $totalUnidades,
-            diferencia: $totalUnidades,
-            precioAnterior: null,
-            precioNuevo: $precioVenta,
-            usuarioId: $usuarioId,
-            usuarioNombre: $usuarioNombre
-        );
+        try {
+            FirestoreConexion::registrarMovimientoProducto(
+                productoId: $productoId,
+                tipo: "ALTA_INICIAL",
+                descripcion: "Alta masiva por lote con stock de {$totalUnidades} un. Costo: $" . number_format($precioCosto, 2) . " | Venta: $" . number_format($precioVenta, 2) . ($proveedorParam ? " [Proveedor: {$proveedorParam}]" : ""),
+                cantidadAnterior: 0,
+                cantidadNueva: $totalUnidades,
+                diferencia: $totalUnidades,
+                precioAnterior: null,
+                precioNuevo: $precioVenta,
+                usuarioId: $usuarioId,
+                usuarioNombre: $usuarioNombre
+            );
+        } catch (Throwable $eMov) {
+            error_log("Aviso: no se pudo registrar movimiento: " . $eMov->getMessage());
+        }
 
         $guardados[] = [
             "id" => $productoId,
