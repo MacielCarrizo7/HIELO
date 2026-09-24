@@ -234,7 +234,7 @@ try {
         }
 
         .story-pricing-title {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -243,6 +243,25 @@ try {
             align-items: center;
             gap: 4px;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Etiqueta VENTA POR MAYOR */
+        .badge-mayorista-story {
+            background: #dc2626;
+            color: #ffffff;
+            font-family: var(--story-font-heading);
+            font-size: 0.60rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid #ef4444;
+            box-shadow: none;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
         }
 
         .story-items-list {
@@ -532,9 +551,6 @@ try {
                                             <span class="story-pricing-title">
                                                 <i class="bi bi-tag-fill"></i> Precios Actualizados
                                             </span>
-                                            <span class="badge text-bg-info bg-opacity-25 text-info border border-info border-opacity-50" style="font-size: 0.58rem; font-weight: 700;">
-                                                DIRECTO DE FÁBRICA
-                                            </span>
                                         </div>
 
                                         <!-- Contenedor Dinámico de Filas de Precios -->
@@ -681,8 +697,12 @@ try {
                 const row = document.createElement("div");
                 row.className = "story-price-row";
 
+                const nombreUpper = (nombre || "").toUpperCase();
+                const esBolsa3kg = nombreUpper.includes("3KG") || nombreUpper.includes("3 KG") || nombreUpper.includes("3 K") || (plantilla === "mayorista" && index === 0);
+                const badgeMayoristaHtml = esBolsa3kg ? `<span class="badge-mayorista-story">VENTA POR MAYOR</span>` : ``;
+
                 if (plantilla === "oferta" && index === 0) {
-                    row.style.background = "linear-gradient(90deg, rgba(245, 158, 11, 0.3) 0%, rgba(255, 255, 255, 0.15) 100%)";
+                    row.style.background = "#2a1e08";
                     row.style.borderColor = "#f59e0b";
                     row.innerHTML = `
                         <div class="story-price-info">
@@ -692,7 +712,10 @@ try {
                             </div>
                             <span class="story-prod-desc">Bolsa cristalina pura • ¡Súper Promo!</span>
                         </div>
-                        <div class="story-prod-price text-warning">${formatoMoneda.format(precioNum)}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            ${badgeMayoristaHtml}
+                            <div class="story-prod-price text-warning">${formatoMoneda.format(precioNum)}</div>
+                        </div>
                     `;
                 } else {
                     let detallePres = "Bolsa individual";
@@ -704,7 +727,10 @@ try {
                             <span class="story-prod-name">${nombre}</span>
                             <span class="story-prod-desc">${detallePres}</span>
                         </div>
-                        <div class="story-prod-price">${formatoMoneda.format(precioNum)}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            ${badgeMayoristaHtml}
+                            <div class="story-prod-price">${formatoMoneda.format(precioNum)}</div>
+                        </div>
                     `;
                 }
 
@@ -745,7 +771,7 @@ try {
         });
 
         // =======================================================
-        // UTILIDADES DE RENDERIZADO Y EXPORTACIÓN HD
+        // UTILIDADES DE RENDERIZADO Y EXPORTACIÓN HD (1080x1920)
         // =======================================================
         function obtenerCaptionTexto() {
             let listaPrecios = "";
@@ -798,9 +824,9 @@ try {
                 }
             }
 
-            // 2. Renderizar elementos con html2canvas configurado para evitar artefactos
+            // 2. Renderizar elementos con html2canvas en Ultra Definición (scale: 3 = 1080x1920 nativo HD)
             const canvasRender = await html2canvas(elemento, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 allowTaint: true,
                 logging: false,
@@ -839,6 +865,14 @@ try {
                             r.style.backgroundColor = "#0f1e33";
                             r.style.borderColor = "#1e3a5f";
                             r.style.boxShadow = "none";
+                        });
+
+                        // Asegurar etiqueta VENTA POR MAYOR en el clon
+                        clonedDoc.querySelectorAll(".badge-mayorista-story").forEach(b => {
+                            b.style.backgroundColor = "#dc2626";
+                            b.style.color = "#ffffff";
+                            b.style.borderColor = "#ef4444";
+                            b.style.boxShadow = "none";
                         });
 
                         // Forzar fondo sólido en footer CTA y badge
