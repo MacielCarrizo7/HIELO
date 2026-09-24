@@ -165,7 +165,7 @@ try {
         $totalUnidades = $iv["total_unidades"];
         $nuevoStock = $iv["stock_actual"] - $totalUnidades;
 
-        // Venta con datos de cliente directo
+        // Venta con datos de cliente directo y vendedor logueado
         $ventaDoc = [
             "id" => $ventaId,
             "ticket_id" => $ticketId,
@@ -180,6 +180,9 @@ try {
             "descuento_monto" => $iv["descuento_monto"],
             "total" => $iv["total"],
             "usuario_id" => $usuarioId,
+            "vendedor_id" => $usuarioId,
+            "vendedor" => $usuarioNombre,
+            "vendedor_nombre" => $usuarioNombre,
             "cliente_id" => $clienteId,
             "cliente_nombre" => $clienteNombre,
             "cliente_telefono" => $clienteTelefono,
@@ -203,6 +206,9 @@ try {
             "subtotal" => $iv["subtotal"],
             "descuento_monto" => $iv["descuento_monto"],
             "total" => $iv["total"],
+            "usuario_id" => $usuarioId,
+            "vendedor" => $usuarioNombre,
+            "vendedor_nombre" => $usuarioNombre,
             "cliente_nombre" => $clienteNombre,
             "cliente_telefono" => $clienteTelefono,
             "cliente_direccion" => $clienteDireccion

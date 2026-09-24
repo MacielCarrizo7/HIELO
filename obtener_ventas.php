@@ -4,6 +4,10 @@ require_once __DIR__ . "/FirestoreConexion.php";
 requerirUsuarioJson(["admin", "vendedor"]);
 header("Content-Type: application/json; charset=UTF-8");
 
+$rolSesion = (string)($_SESSION["usuario_rol"] ?? "");
+$usuarioIdSesion = (int)($_SESSION["usuario_id"] ?? 0);
+$usuarioNombreSesion = trim(($_SESSION["usuario_nombre"] ?? "") . " " . ($_SESSION["usuario_apellido"] ?? ""));
+
 $desde = trim($_GET["desde"] ?? "");
 $hasta = trim($_GET["hasta"] ?? "");
 $productoIdTexto = trim($_GET["producto_id"] ?? "");
@@ -47,10 +51,25 @@ try {
         $prodId = (int) ($v["producto_id"] ?? 0);
         $cliId = (int) ($v["cliente_id"] ?? 0);
         $cliNombreDoc = (string) ($v["cliente_nombre"] ?? ($mapaUsuarios[$cliId] ?? ""));
-        $usuId = (int) ($v["usuario_id"] ?? 0);
+        $usuId = (int) ($v["usuario_id"] ?? ($v["vendedor_id"] ?? 0));
+        $vendedorNombreDoc = (string) ($v["vendedor_nombre"] ?? ($v["vendedor"] ?? ($mapaUsuarios[$usuId] ?? "")));
         $est = (string) ($v["estado"] ?? "ACTIVA");
         $fecha = (string) ($v["fecha"] ?? "");
         $ticketId = (string) ($v["ticket_id"] ?? "");
+
+        // 1. CONTROL DE ACCESO POR ROL:
+        // Si el usuario logueado es "vendedor", únicamente puede ver sus propias ventas
+        if ($rolSesion === "vendedor") {
+            $esPropia = false;
+            if ($usuarioIdSesion > 0 && $usuId === $usuarioIdSesion) {
+                $esPropia = true;
+            } elseif ($usuarioNombreSesion !== "" && mb_strtolower(trim($vendedorNombreDoc)) === mb_strtolower($usuarioNombreSesion)) {
+                $esPropia = true;
+            }
+            if (!$esPropia) {
+                continue;
+            }
+        }
 
         // Filtro por fecha desde
         if ($desde !== "" && $fecha !== "" && substr($fecha, 0, 10) < $desde) {
@@ -77,8 +96,8 @@ try {
             continue;
         }
 
-        // Filtro por vendedor
-        if ($vendIdFiltro !== null && $usuId !== $vendIdFiltro) {
+        // Filtro por vendedor (aplicable al rol admin)
+        if ($rolSesion === "admin" && $vendIdFiltro !== null && $usuId !== $vendIdFiltro) {
             continue;
         }
 
@@ -115,7 +134,7 @@ try {
             "cliente" => !empty($v["cliente_nombre"]) ? (string)$v["cliente_nombre"] : ($mapaUsuarios[$cliId] ?? "Consumidor Final"),
             "cliente_telefono" => (string)($v["cliente_telefono"] ?? ""),
             "cliente_direccion" => (string)($v["cliente_direccion"] ?? ""),
-            "vendedor" => $mapaUsuarios[$usuId] ?? ""
+            "vendedor" => $vendedorNombreDoc !== "" ? $vendedorNombreDoc : ($mapaUsuarios[$usuId] ?? "—")
         ];
     }
 
