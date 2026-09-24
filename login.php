@@ -14,6 +14,40 @@ $dni = "";
 $nombre = "";
 $apellido = "";
 
+/**
+ * Verifica si la colección 'usuarios' está vacía en Firestore y crea el Admin por defecto.
+ */
+function asegurarAdminPorDefecto(FirestoreRestCliente $firestore): void {
+    try {
+        $usuariosExistentes = $firestore->obtenerColeccion("usuarios");
+        if (empty($usuariosExistentes)) {
+            $adminInicial = [
+                "id" => 1,
+                "dni" => "123456",
+                "nombre" => "admin",
+                "apellido" => "admin",
+                "password" => password_hash("admin123", PASSWORD_DEFAULT),
+                "rol" => "admin",
+                "activo" => 1,
+                "totp_enabled" => 0,
+                "limite_descuento" => 100.0,
+                "fecha_registro" => date("Y-m-d H:i:s"),
+            ];
+            $firestore->guardarDocumento("usuarios", "1", $adminInicial, false);
+        }
+    } catch (Throwable $e) {
+        error_log("Aviso al verificar o inicializar usuario admin por defecto: " . $e->getMessage());
+    }
+}
+
+// Ejecutar verificación inicial en Firestore
+try {
+    $firestore = FirestoreConexion::obtenerFirestore();
+    asegurarAdminPorDefecto($firestore);
+} catch (Throwable $e) {
+    error_log("Error al conectar con Firestore en carga de login: " . $e->getMessage());
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $dni = trim($_POST["dni"] ?? "");
     $nombre = trim($_POST["nombre"] ?? "");
@@ -25,6 +59,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         try {
             $firestore = FirestoreConexion::obtenerFirestore();
+            
+            // Garantizar la existencia del admin si la base de datos está vacía
+            asegurarAdminPorDefecto($firestore);
 
             // 1. Búsqueda de usuario por DNI en Firestore (tolerante a string e integer)
             $candidatos = [];
@@ -79,6 +116,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
 
+            // Caso especial: si es el admin por defecto y no se encontró por alguna razón, crearlo y asignarlo
+            if (!$usuario && $dni === "123456" && $nombreLower === "admin" && $apellidoLower === "admin") {
+                $adminDoc = [
+                    "id" => 1,
+                    "dni" => "123456",
+                    "nombre" => "admin",
+                    "apellido" => "admin",
+                    "password" => password_hash("admin123", PASSWORD_DEFAULT),
+                    "rol" => "admin",
+                    "activo" => 1,
+                    "totp_enabled" => 0,
+                    "limite_descuento" => 100.0,
+                    "fecha_registro" => date("Y-m-d H:i:s"),
+                ];
+                $firestore->guardarDocumento("usuarios", "1", $adminDoc, false);
+                $usuario = $adminDoc;
+            }
+
             // 3. Validar estado activo
             $esActivo = true;
             if ($usuario && isset($usuario["activo"])) {
@@ -96,12 +151,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if (str_starts_with($storedPassword, "$2y$") || str_starts_with($storedPassword, "$2a$") || str_starts_with($storedPassword, "$argon2")) {
                     $passwordValido = password_verify($password, $storedPassword);
                 } else {
-                    // Contraseña en texto plano creada manualmente en Firebase Firestore
+                    // Contraseña en texto plano
                     $passwordValido = hash_equals($storedPassword, $password) || ($storedPassword === $password);
 
                     // Si coincidió en texto plano, actualizar automáticamente a hash seguro Bcrypt en Firestore
                     if ($passwordValido) {
-                        $docIdActualizar = (string)($usuario["_id"] ?? ($usuario["id"] ?? ""));
+                        $docIdActualizar = (string)($usuario["_id"] ?? ($usuario["id"] ?? "1"));
                         if ($docIdActualizar !== "") {
                             try {
                                 $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
@@ -155,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Acceso seguro al sistema Control Stock">
+    <meta name="description" content="Acceso seguro al sistema de Venta y Control de Hielo">
     <title>Iniciar sesión | Control Stock</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/estilos.css" rel="stylesheet">
@@ -165,21 +220,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="login-layout">
             <section class="login-presentacion d-none d-lg-flex" aria-label="Presentación">
                 <div>
-                    <span class="marca-icono marca-icono-claro mb-4" aria-hidden="true">CS</span>
-                    <p class="etiqueta text-white-50">Gestión simple y segura</p>
-                    <h1 class="display-5 fw-bold mb-3">Todo tu negocio en un solo lugar.</h1>
-                    <p class="lead text-white-50 mb-0">Administrá productos, inventario y ventas con una experiencia ágil y robusta.</p>
+                    <span class="marca-icono marca-icono-claro mb-4" aria-hidden="true">❄️</span>
+                    <p class="etiqueta text-white-50">Distribución y Fábrica de Hielo</p>
+                    <h1 class="display-5 fw-bold mb-3">Gestión y Venta de Bolsas de Hielo.</h1>
+                    <p class="lead text-white-50 mb-0">Control de producción, stock por presentación y mostrador ágil para puntos de venta.</p>
                 </div>
             </section>
 
             <section class="login-card" aria-labelledby="titulo-login">
                 <div class="d-flex align-items-center gap-2 mb-4 d-lg-none">
-                    <span class="marca-icono" aria-hidden="true">CS</span>
+                    <span class="marca-icono" aria-hidden="true">❄️</span>
                     <span class="fw-bold">Control Stock</span>
                 </div>
                 <p class="etiqueta text-primary mb-2">Bienvenido</p>
                 <h2 id="titulo-login" class="h2 fw-bold mb-2">Iniciar sesión</h2>
-                <p class="texto-secundario mb-4">Ingresá tus 4 datos de autenticación para acceder al sistema.</p>
+                <p class="texto-secundario mb-4">Ingresá con tus credenciales de Administrador o Vendedor.</p>
 
                 <?php if ($error !== ""): ?>
                     <div class="alert alert-danger" role="alert">
@@ -190,16 +245,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <form method="POST" autocomplete="on">
                     <div class="mb-3">
                         <label for="dni" class="form-label">DNI *</label>
-                        <input type="text" id="dni" name="dni" class="form-control" inputmode="numeric" autocomplete="username" maxlength="20" placeholder="Ej: 12345678" value="<?= htmlspecialchars($dni, ENT_QUOTES, "UTF-8") ?>" required autofocus>
+                        <input type="text" id="dni" name="dni" class="form-control" inputmode="numeric" autocomplete="username" maxlength="20" placeholder="Ej: 123456" value="<?= htmlspecialchars($dni, ENT_QUOTES, "UTF-8") ?>" required autofocus>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-12 col-sm-6">
                             <label for="nombre" class="form-label">Nombre *</label>
-                            <input type="text" id="nombre" name="nombre" class="form-control" autocomplete="given-name" maxlength="100" placeholder="Ej: Admin" value="<?= htmlspecialchars($nombre, ENT_QUOTES, "UTF-8") ?>" required>
+                            <input type="text" id="nombre" name="nombre" class="form-control" autocomplete="given-name" maxlength="100" placeholder="Ej: admin" value="<?= htmlspecialchars($nombre, ENT_QUOTES, "UTF-8") ?>" required>
                         </div>
                         <div class="col-12 col-sm-6">
                             <label for="apellido" class="form-label">Apellido *</label>
-                            <input type="text" id="apellido" name="apellido" class="form-control" autocomplete="family-name" maxlength="100" placeholder="Ej: General" value="<?= htmlspecialchars($apellido, ENT_QUOTES, "UTF-8") ?>" required>
+                            <input type="text" id="apellido" name="apellido" class="form-control" autocomplete="family-name" maxlength="100" placeholder="Ej: admin" value="<?= htmlspecialchars($apellido, ENT_QUOTES, "UTF-8") ?>" required>
                         </div>
                     </div>
                     <div class="mb-4">
@@ -209,7 +264,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <button type="submit" class="btn btn-primary btn-lg w-100">Iniciar sesión</button>
                 </form>
 
-                <p class="texto-secundario small text-center mt-4 mb-0">Sistema 100% Cloud con PHP 8.2, Docker y Firebase Firestore en Render.</p>
+                <p class="texto-secundario small text-center mt-4 mb-0">Sistema 100% Cloud con PHP 8.2 y Google Firestore.</p>
             </section>
         </div>
     </main>
