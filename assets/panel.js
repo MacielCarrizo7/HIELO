@@ -114,13 +114,13 @@ function crearBadgeVencimiento(fechaIso, prod = null) {
     return badge;
 }
 
-// Renderizado de Productos con Código de Barras y Botón de Historial
+// Renderizado de Presentaciones de Hielo
 function renderizarFilasProductos(productos) {
     const tbody = document.getElementById("productosBody");
     if (!tbody) return;
-    const columnas = 8;
+    const columnas = 6;
     if (productos.length === 0) {
-        mensajeEnTabla(tbody, columnas, "No se encontraron productos con los filtros seleccionados.");
+        mensajeEnTabla(tbody, columnas, "No se encontraron presentaciones de hielo con los filtros seleccionados.");
         return;
     }
     tbody.replaceChildren();
@@ -147,17 +147,11 @@ function renderizarFilasProductos(productos) {
         cbTd.appendChild(cbCont);
         fila.appendChild(cbTd);
 
-        // 2. Nombre con Diferenciación de Proveedor
+        // 2. Nombre / Presentación
         const nombreTd = document.createElement("td");
         const nombreTitulo = document.createElement("div");
-        nombreTitulo.className = "fw-bold d-flex align-items-center flex-wrap gap-1";
+        nombreTitulo.className = "fw-bold text-dark";
         nombreTitulo.textContent = producto.nombre;
-        if (producto.proveedor) {
-            const badgeProv = document.createElement("span");
-            badgeProv.className = "badge text-bg-light border text-primary small fw-semibold";
-            badgeProv.textContent = producto.proveedor;
-            nombreTitulo.appendChild(badgeProv);
-        }
         nombreTd.appendChild(nombreTitulo);
         if (producto.descripcion) {
             const desc = document.createElement("small");
@@ -167,35 +161,21 @@ function renderizarFilasProductos(productos) {
         }
         fila.appendChild(nombreTd);
 
-        // 3. Presentación
+        // 3. Presentación / Empaque
         const presTd = document.createElement("td");
         const presNombre = producto.presentacion ? producto.presentacion.toUpperCase() : "UNIDAD";
         if (producto.presentacion && producto.presentacion.toLowerCase() !== "unidad") {
             const permite = (producto.permite_venta_unidad !== false && producto.permite_venta_unidad !== 0 && producto.permite_venta_unidad !== "0");
-            presTd.innerHTML = `<span class="fw-semibold">${escapeHtml(presNombre)}</span><small class="d-block ${permite ? 'text-success' : 'text-danger'}" style="font-size:0.75rem;">${permite ? 'Venta x unidad' : 'Solo empaque'}</small>`;
+            presTd.innerHTML = `<span class="fw-semibold">${escapeHtml(presNombre)}</span><small class="d-block ${permite ? 'text-success' : 'text-danger'}" style="font-size:0.75rem;">${permite ? 'Venta x bolsa' : 'Solo empaque'}</small>`;
         } else {
             presTd.innerHTML = `<span class="fw-semibold">${escapeHtml(presNombre)}</span>`;
         }
         fila.appendChild(presTd);
 
-        // 4. Proveedor
-        const provTd = document.createElement("td");
-        if (producto.proveedor) {
-            provTd.innerHTML = `<span class="fw-semibold text-dark">${producto.proveedor}</span>`;
-        } else {
-            provTd.innerHTML = '<span class="text-muted small">—</span>';
-        }
-        fila.appendChild(provTd);
-
-        // 5. Vencimiento (FIFO)
-        const vencimientoTd = document.createElement("td");
-        vencimientoTd.appendChild(crearBadgeVencimiento(producto.fecha_vencimiento, producto));
-        fila.appendChild(vencimientoTd);
-
-        // 6. Precio
+        // 4. Precio Unitario
         fila.append(celda(formatoMoneda.format(producto.precio), "fw-bold text-primary"));
 
-        // 7. Stock
+        // 5. Stock en Cámara
         const stockTd = document.createElement("td");
         const stock = Number(producto.stock);
         const unidadesPorBulto = Number(producto.unidades_por_bulto) || 1;
@@ -207,18 +187,18 @@ function renderizarFilasProductos(productos) {
         } else if (producto.presentacion && producto.presentacion !== "unidad" && unidadesPorBulto > 1) {
             const bultos = Math.floor(stock / unidadesPorBulto);
             const resto = stock % unidadesPorBulto;
-            let textoEmpaque = `${stock} un.`;
+            let textoEmpaque = `${stock} bolsas`;
             if (bultos > 0) {
                 textoEmpaque += ` (${bultos} ${producto.presentacion}${bultos > 1 ? "s" : ""}${resto > 0 ? ` + ${resto} un.` : ""})`;
             }
             badge.textContent = textoEmpaque;
         } else {
-            badge.textContent = `${stock} un. disponibles`;
+            badge.textContent = `${stock} bolsas`;
         }
         stockTd.appendChild(badge);
         fila.appendChild(stockTd);
 
-        // 8. Acciones (Historial + Editar + Dar de Baja)
+        // 6. Acciones (Historial + Editar + Dar de Baja)
         const accion = document.createElement("td");
         accion.className = "text-end";
         const grupo = document.createElement("div");
@@ -228,7 +208,7 @@ function renderizarFilasProductos(productos) {
         const btnHistorial = document.createElement("button");
         btnHistorial.type = "button";
         btnHistorial.className = "btn btn-outline-secondary btn-sm";
-        btnHistorial.title = "Ver trazabilidad y movimientos";
+        btnHistorial.title = "Ver trazabilidad y movimientos en cámara";
         btnHistorial.textContent = "Historial";
         btnHistorial.addEventListener("click", () => abrirModalHistorialProducto(producto.id));
         grupo.appendChild(btnHistorial);
@@ -242,8 +222,8 @@ function renderizarFilasProductos(productos) {
             const btnEliminar = document.createElement("button");
             btnEliminar.type = "button";
             btnEliminar.className = "btn btn-outline-danger btn-sm";
-            btnEliminar.title = "Dar de baja del inventario";
-            btnEliminar.textContent = "Dar de Baja";
+            btnEliminar.title = "Dar de baja / registrar merma";
+            btnEliminar.textContent = "Baja/Merma";
             btnEliminar.addEventListener("click", () => abrirModalBaja(producto));
 
             grupo.append(btnEditar, btnEliminar);
@@ -257,39 +237,24 @@ function renderizarFilasProductos(productos) {
 
 function filtrarYRenderizarProductos() {
     const inputBusqueda = document.getElementById("filtroProductoBusqueda");
-    const selectSemaforo = document.getElementById("filtroProductoSemaforo");
     const selectPresentacion = document.getElementById("filtroProductoPresentacion");
-    const selectProveedor = document.getElementById("filtroProductoProveedor");
 
     const query = inputBusqueda ? inputBusqueda.value.toLowerCase().trim() : "";
-    const semaforoFiltro = selectSemaforo ? selectSemaforo.value : "";
     const presentacionFiltro = selectPresentacion ? selectPresentacion.value : "";
-    const proveedorFiltro = selectProveedor ? selectProveedor.value.toLowerCase().trim() : "";
 
     const filtrados = productosCache.filter((producto) => {
         if (query !== "") {
             const nombre = (producto.nombre || "").toLowerCase();
-            const proveedor = (producto.proveedor || "").toLowerCase();
             const codigo = (producto.codigo || "").toLowerCase();
             const cb = (producto.codigo_barras || "").toLowerCase();
-            if (!nombre.includes(query) && !proveedor.includes(query) && !codigo.includes(query) && !cb.includes(query)) {
+            if (!nombre.includes(query) && !codigo.includes(query) && !cb.includes(query)) {
                 return false;
             }
-        }
-
-        if (proveedorFiltro !== "") {
-            const prov = (producto.proveedor || "").toLowerCase().trim();
-            if (prov !== proveedorFiltro) return false;
         }
 
         if (presentacionFiltro !== "") {
             const pres = (producto.presentacion || "unidad").toLowerCase();
             if (pres !== presentacionFiltro) return false;
-        }
-
-        if (semaforoFiltro !== "") {
-            const cat = obtenerCategoriaSemaforo(producto.fecha_vencimiento, producto);
-            if (cat !== semaforoFiltro) return false;
         }
 
         return true;
@@ -301,8 +266,8 @@ function filtrarYRenderizarProductos() {
 async function cargarProductos() {
     const tbody = document.getElementById("productosBody");
     if (!tbody) return;
-    const columnas = 8;
-    mensajeEnTabla(tbody, columnas, "Cargando productos...");
+    const columnas = 6;
+    mensajeEnTabla(tbody, columnas, "Cargando presentaciones de hielo...");
     try {
         productosCache = await solicitar("obtener_productos.php");
         
@@ -1752,8 +1717,8 @@ async function cargarVentas(filtros = {}) {
 async function cargarIngresos(filtros = {}) {
     const tbody = document.getElementById("ingresosBody");
     if (!tbody) return;
-    const columnas = 9;
-    mensajeEnTabla(tbody, columnas, "Cargando kardex de ingresos...");
+    const columnas = 7;
+    mensajeEnTabla(tbody, columnas, "Cargando kardex de producción e ingresos a cámara...");
 
     const params = new URLSearchParams();
     Object.entries(filtros).forEach(([k, v]) => {
@@ -1776,12 +1741,12 @@ async function cargarIngresos(filtros = {}) {
             fila.append(celda(String(ing.id)));
             fila.append(celda(fechaLegible(ing.fecha)));
 
-            // N° Factura
+            // N° Factura / Remito
             const factTd = document.createElement("td");
             if (ing.numero_factura && ing.numero_factura !== "—" && ing.numero_factura !== "Sin Factura") {
                 factTd.innerHTML = `<span class="badge text-bg-light border font-monospace">${ing.numero_factura}</span>`;
             } else if (ing.sin_factura || ing.numero_factura === "Sin Factura") {
-                factTd.innerHTML = `<span class="badge text-bg-light border text-muted">Sin factura</span>`;
+                factTd.innerHTML = `<span class="badge text-bg-light border text-muted">Sin comprobante</span>`;
             } else {
                 factTd.innerHTML = `<span class="text-muted small">—</span>`;
             }
@@ -1790,18 +1755,12 @@ async function cargarIngresos(filtros = {}) {
             fila.append(celda(ing.producto_nombre, "fw-bold"));
 
             const cantEmpaque = (ing.presentacion && ing.presentacion !== "unidad" && Number(ing.unidades_por_bulto) > 1)
-                ? `${ing.cantidad} ${ing.presentacion}(s) (${ing.total_unidades} un.)`
-                : `${ing.total_unidades} un.`;
+                ? `${ing.cantidad} ${ing.presentacion}(s) (${ing.total_unidades} bolsas)`
+                : `${ing.total_unidades} bolsas`;
             fila.append(celda(cantEmpaque));
 
-            fila.append(celda(ing.proveedor || "—"));
-
-            const vencTd = document.createElement("td");
-            vencTd.appendChild(crearBadgeVencimiento(ing.fecha_vencimiento));
-            fila.appendChild(vencTd);
-
             fila.append(celda(ing.usuario || "Admin"));
-            fila.append(celda(ing.motivo || "Alta de inventario", "small text-muted"));
+            fila.append(celda(ing.motivo || "Ingreso a cámara", "small text-muted"));
 
             tbody.appendChild(fila);
         });
@@ -2895,9 +2854,9 @@ async function cargarBajas(filtros = {}) {
 function renderizarBajas(bajas) {
     const tbody = document.getElementById("bajasBody");
     if (!tbody) return;
-    const columnas = 10;
+    const columnas = 9;
     if (bajas.length === 0) {
-        mensajeEnTabla(tbody, columnas, "No se encontraron registros de bajas de inventario.");
+        mensajeEnTabla(tbody, columnas, "No se encontraron registros de bajas o merma de hielo.");
         return;
     }
     tbody.replaceChildren();
@@ -2911,7 +2870,7 @@ function renderizarBajas(bajas) {
         // 2. Fecha
         fila.appendChild(celda(fechaLegible(baja.fecha_baja), "small text-nowrap"));
 
-        // 3. Producto
+        // 3. Presentación
         const tdProd = document.createElement("td");
         const strong = document.createElement("strong");
         strong.textContent = baja.nombre;
@@ -2928,11 +2887,11 @@ function renderizarBajas(bajas) {
         // 4. Categoría
         fila.appendChild(celda(baja.categoria || "—", "small"));
 
-        // 5. Motivo
+        // 5. Motivo de Baja
         const tdMotivo = document.createElement("td");
         const badgeMot = document.createElement("span");
         badgeMot.className = "badge bg-danger-subtle text-danger border border-danger-subtle";
-        badgeMot.textContent = baja.motivo_baja || "Eliminación manual";
+        badgeMot.textContent = baja.motivo_baja || "Merma / Descongelamiento";
         tdMotivo.appendChild(badgeMot);
         fila.appendChild(tdMotivo);
 
@@ -2942,22 +2901,16 @@ function renderizarBajas(bajas) {
         tdRem.textContent = `${baja.stock_remanente} un.`;
         fila.appendChild(tdRem);
 
-        // 7. Unidades Vendidas Históricas
-        const tdVend = document.createElement("td");
-        tdVend.className = "fw-semibold text-success";
-        tdVend.textContent = `${baja.unidades_vendidas_historicas} un.`;
-        fila.appendChild(tdVend);
-
-        // 8. Pérdida en Costo
+        // 7. Pérdida Estimada ($)
         const tdPerd = document.createElement("td");
         tdPerd.className = "text-muted small";
         tdPerd.textContent = formatoMoneda.format(baja.total_perdida_costo || 0);
         fila.appendChild(tdPerd);
 
-        // 9. Responsable
+        // 8. Responsable
         fila.appendChild(celda(baja.usuario_nombre || "Admin", "small"));
 
-        // 10. Observaciones
+        // 9. Observaciones
         fila.appendChild(celda(baja.observaciones || "—", "small text-muted"));
 
         tbody.appendChild(fila);
@@ -2991,7 +2944,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await Promise.all([
         cargarProductos(),
-        cargarProveedores(),
         cargarVentas(),
         cargarIngresos(),
         cargarBajas(),

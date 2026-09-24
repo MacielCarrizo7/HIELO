@@ -12,17 +12,14 @@ $firestore = FirestoreConexion::obtenerFirestore();
 if ($esEdicion) {
     $producto = $firestore->obtenerDocumento("productos", (string)$id);
     if (!$producto) {
-        header("Location: admin.php?error=" . urlencode("El producto no existe."));
+        header("Location: admin.php?error=" . urlencode("La presentación de hielo no existe."));
         exit;
     }
 }
 
-// Cargar categorías y proveedores para los selectores
+// Cargar categorías para los selectores
 $categorias = $firestore->obtenerTodos("categorias");
 usort($categorias, fn($a, $b) => strcasecmp($a["nombre"] ?? "", $b["nombre"] ?? ""));
-
-$proveedores = $firestore->obtenerTodos("proveedores");
-usort($proveedores, fn($a, $b) => strcasecmp($a["nombre"] ?? "", $b["nombre"] ?? ""));
 
 $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . ($_SESSION["usuario_apellido"] ?? ""));
 $csrf = tokenCsrf();
@@ -32,7 +29,7 @@ $csrf = tokenCsrf();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $esEdicion ? "Editar Producto #{$id}" : "Ingreso y Alta de Productos (1 a 50 ítems)" ?> | Control Stock</title>
+    <title><?= $esEdicion ? "Editar Presentación #{$id}" : "Ingreso de Hielo a Cámara" ?> | Control Stock</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/estilos.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -43,8 +40,8 @@ $csrf = tokenCsrf();
     <nav class="navbar navbar-expand-lg app-navbar sticky-top py-3">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="admin.php">
-                <span class="marca-icono" aria-hidden="true">CS</span>
-                <span class="fw-bold">Control Stock</span>
+                <span class="marca-icono" aria-hidden="true">❄️</span>
+                <span class="fw-bold">Control Stock Hielo</span>
             </a>
             <div class="d-flex align-items-center gap-2 ms-auto">
                 <a href="admin.php" class="btn btn-outline-secondary btn-sm">← Volver al Panel</a>
@@ -55,7 +52,7 @@ $csrf = tokenCsrf();
     <main class="container py-4">
         <?php if ($esEdicion): ?>
         <!-- ============================================================== -->
-        <!-- MODO EDICIÓN INDIVIDUAL DE PRODUCTO EXISTENTE                   -->
+        <!-- MODO EDICIÓN INDIVIDUAL DE PRESENTACIÓN EXISTENTE              -->
         <!-- ============================================================== -->
         <div class="row justify-content-center">
             <div class="col-12 col-lg-9">
@@ -63,8 +60,8 @@ $csrf = tokenCsrf();
                 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                     <div>
                         <a href="admin.php" class="text-decoration-none text-muted small">← Volver a Inventario</a>
-                        <h1 class="h3 fw-bold mt-1 mb-0">Editar Producto #<?= $id ?></h1>
-                        <p class="text-muted small mb-0">Modificación de información comercial, precios, categoría y stock.</p>
+                        <h1 class="h3 fw-bold mt-1 mb-0">Editar Presentación #<?= $id ?></h1>
+                        <p class="text-muted small mb-0">Modificación de precios, empaque, código y stock en cámara de frío.</p>
                     </div>
                 </div>
 
@@ -77,11 +74,11 @@ $csrf = tokenCsrf();
 
                     <!-- 1. Información General -->
                     <div class="seccion-card mb-4">
-                        <h2 class="h5 fw-bold text-primary mb-3">1. Datos Básicos del Producto</h2>
+                        <h2 class="h5 fw-bold text-primary mb-3">1. Datos de la Presentación</h2>
                         
                         <div class="row g-3">
                             <div class="col-12 col-md-8">
-                                <label for="prodNombre" class="form-label fw-bold">Nombre del Producto / Presentación *</label>
+                                <label for="prodNombre" class="form-label fw-bold">Nombre / Presentación de Hielo *</label>
                                 <input type="text" class="form-control" id="prodNombre" name="nombre" value="<?= htmlspecialchars($producto['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: Bolsa de Hielo en Cubos 2kg" required>
                             </div>
 
@@ -111,9 +108,9 @@ $csrf = tokenCsrf();
                                 <textarea class="form-control" id="prodDescripcion" name="descripcion" rows="3" placeholder="Ej: Bolsa de polietileno de alta densidad 2kg, cubos macizos de agua purificada y filtrada."><?= htmlspecialchars($producto['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                             </div>
 
-                            <!-- Foto del Producto -->
+                            <!-- Foto de la Presentación -->
                             <div class="col-12">
-                                <label class="form-label fw-bold">Foto o Imagen del Producto</label>
+                                <label class="form-label fw-bold">Foto o Imagen de la Bolsa</label>
                                 <div class="p-3 border rounded-3 bg-light">
                                     <div class="row align-items-center g-3">
                                         <div class="col-12 col-md-3 text-center">
@@ -139,29 +136,18 @@ $csrf = tokenCsrf();
                         </div>
                     </div>
 
-                    <!-- 2. Código de Barras y Proveedor -->
+                    <!-- 2. Código de Barras -->
                     <div class="seccion-card mb-4">
-                        <h2 class="h5 fw-bold text-primary mb-3">2. Identificación y Proveedor</h2>
+                        <h2 class="h5 fw-bold text-primary mb-3">2. Identificación y Código de Barras</h2>
                         <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <label for="prodCodigoBarras" class="form-label">Código de Barras (EAN-13 / UPC / Alfanumérico)</label>
+                            <div class="col-12">
+                                <label for="prodCodigoBarras" class="form-label">Código de Barras de la Bolsa (EAN-13 / CODE128)</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control font-monospace" id="prodCodigoBarras" name="codigo_barras" value="<?= htmlspecialchars($producto['codigo_barras'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: 7791234567890">
                                     <button class="btn btn-outline-secondary" type="button" id="btnEscanearCb" title="Escanear con cámara">Escanear</button>
                                     <button class="btn btn-outline-secondary" type="button" id="btnGenerarCb" title="Generar código aleatorio">Generar</button>
                                 </div>
-                            </div>
-
-                            <div class="col-12 col-md-6">
-                                <label for="prodProveedor" class="form-label">Proveedor</label>
-                                <select class="form-select" id="prodProveedor" name="proveedor">
-                                    <option value="">-- Seleccionar Proveedor --</option>
-                                    <?php foreach ($proveedores as $prov): ?>
-                                        <option value="<?= htmlspecialchars($prov['nombre'], ENT_QUOTES, 'UTF-8') ?>" <?= (isset($producto['proveedor']) && $producto['proveedor'] === $prov['nombre']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($prov['nombre'], ENT_QUOTES, 'UTF-8') ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <small class="text-muted">Utilizado por los escáneres en el mostrador del Punto de Venta.</small>
                             </div>
                         </div>
                     </div>
@@ -172,12 +158,12 @@ $csrf = tokenCsrf();
                         <div class="p-3 bg-light rounded-3 border mb-3">
                             <div class="row g-3">
                                 <div class="col-12 col-md-5">
-                                    <label for="prodPrecioCosto" class="form-label fw-bold">Precio de Costo ($) *</label>
+                                    <label for="prodPrecioCosto" class="form-label fw-bold">Costo de Fabricación / Bolsa ($) *</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
                                         <input type="number" step="0.01" min="0" class="form-control fw-bold" id="prodPrecioCosto" name="precio_costo" value="<?= htmlspecialchars((string)($producto['precio_costo'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" placeholder="0.00" required>
                                     </div>
-                                    <small class="text-muted">Costo unitario de compra al proveedor.</small>
+                                    <small class="text-muted">Costo unitario de agua, energía, bolsa y packaging.</small>
                                 </div>
 
                                 <div class="col-12 col-md-5">
@@ -186,7 +172,7 @@ $csrf = tokenCsrf();
                                         <span class="input-group-text">$</span>
                                         <input type="number" step="0.01" min="0.01" class="form-control fw-bold text-success fs-5" id="prodPrecioVenta" name="precio_venta" value="<?= htmlspecialchars((string)($producto['precio_venta'] ?? $producto['precio'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" placeholder="0.00" required>
                                     </div>
-                                    <small class="text-muted">Precio final al público.</small>
+                                    <small class="text-muted">Precio final al público / comercio.</small>
                                 </div>
 
                                 <div class="col-12 col-md-2 d-flex flex-column justify-content-center text-center">
@@ -197,42 +183,37 @@ $csrf = tokenCsrf();
                         </div>
                     </div>
 
-                    <!-- 4. Stock, Presentación y Vencimiento -->
+                    <!-- 4. Stock, Presentación y Empaque -->
                     <div class="seccion-card mb-4">
-                        <h2 class="h5 fw-bold text-primary mb-3">4. Inventario y Empaque</h2>
+                        <h2 class="h5 fw-bold text-primary mb-3">4. Inventario en Cámara y Empaque</h2>
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
-                                <label for="prodPresentacion" class="form-label">Presentación de Venta</label>
+                                <label for="prodPresentacion" class="form-label">Tipo de Empaque</label>
                                 <select class="form-select" id="prodPresentacion" name="presentacion">
-                                    <option value="unidad" <?= (!isset($producto['presentacion']) || $producto['presentacion'] === 'unidad') ? 'selected' : '' ?>>Unidad individual</option>
+                                    <option value="unidad" <?= (!isset($producto['presentacion']) || $producto['presentacion'] === 'unidad') ? 'selected' : '' ?>>Bolsa individual (Unidad)</option>
                                     <option value="caja" <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'caja') ? 'selected' : '' ?>>Caja</option>
-                                    <option value="bulto" <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'bulto') ? 'selected' : '' ?>>Bulto cerrado</option>
+                                    <option value="bulto" <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'bulto') ? 'selected' : '' ?>>Bulto / Pack cerrado</option>
                                 </select>
                             </div>
 
                             <div class="col-12 col-md-4 <?= (isset($producto['presentacion']) && ($producto['presentacion'] === 'caja' || $producto['presentacion'] === 'bulto')) ? '' : 'd-none' ?>" id="contenedorUnidadesBulto">
-                                <label for="prodUnidadesBulto" class="form-label">Unidades por caja/bulto</label>
+                                <label for="prodUnidadesBulto" class="form-label">Bolsas por caja/pack</label>
                                 <input type="number" min="1" class="form-control" id="prodUnidadesBulto" name="unidades_por_bulto" value="<?= htmlspecialchars((string)($producto['unidades_por_bulto'] ?? 1), ENT_QUOTES, 'UTF-8') ?>">
                             </div>
 
                             <div class="col-12 col-md-4">
-                                <label for="prodStock" class="form-label fw-bold">Stock Total (Unidades) *</label>
+                                <label for="prodStock" class="form-label fw-bold">Stock en Cámara (Bolsas) *</label>
                                 <input type="number" min="0" class="form-control" id="prodStock" name="stock" value="<?= htmlspecialchars((string)($producto['stock'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" required>
-                                <small class="text-muted">Unidades físicas totales disponibles.</small>
+                                <small class="text-muted">Cantidad total de bolsas disponibles en cámara.</small>
                             </div>
 
-                            <div class="col-12 col-md-6">
-                                <label for="prodVencimiento" class="form-label">Fecha de Vencimiento (FIFO)</label>
-                                <input type="date" class="form-control" id="prodVencimiento" name="fecha_vencimiento" value="<?= htmlspecialchars($producto['fecha_vencimiento'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                            </div>
-
-                            <div class="col-12 col-md-6">
-                                <label for="prodNumeroFactura" class="form-label">N° Factura / Remito</label>
+                            <div class="col-12">
+                                <label for="prodNumeroFactura" class="form-label">N° Remito / Comprobante de Producción</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="prodNumeroFactura" name="numero_factura" placeholder="Ej: FC-0001-12345678">
+                                    <input type="text" class="form-control" id="prodNumeroFactura" name="numero_factura" placeholder="Ej: REM-0001-12345678">
                                     <div class="input-group-text">
                                         <input class="form-check-input mt-0 me-1" type="checkbox" id="prodSinFactura" name="sin_factura">
-                                        <label class="form-check-label small" for="prodSinFactura">Sin factura</label>
+                                        <label class="form-check-label small" for="prodSinFactura">Sin comprobante</label>
                                     </div>
                                 </div>
                             </div>
@@ -241,11 +222,11 @@ $csrf = tokenCsrf();
                                 <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
                                     <div>
                                         <label class="form-check-label fw-bold d-block text-dark" for="prodPermiteVentaUnidad">
-                                            ¿Se puede vender por unidad suelta / fraccionada?
+                                            ¿Se puede vender por bolsa suelta / fraccionada?
                                         </label>
                                         <small class="text-muted d-block" id="textoAyudaPermiteUnidad">
                                             <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'unidad') 
-                                                ? 'Los artículos con presentación "Unidad" se venden siempre por unidad.' 
+                                                ? 'Las bolsas individuales se venden por unidad suelta.' 
                                                 : 'Si está desactivado, el Punto de Venta obligará a vender únicamente en presentación empaquetada (Caja/Bulto).' ?>
                                         </small>
                                     </div>
@@ -256,8 +237,8 @@ $csrf = tokenCsrf();
                             </div>
 
                             <div class="col-12">
-                                <label for="prodMotivo" class="form-label small text-muted">Motivo de la Modificación (para auditoría)</label>
-                                <input type="text" class="form-control form-control-sm" id="prodMotivo" name="motivo" value="Modificación / corrección de producto">
+                                <label for="prodMotivo" class="form-label small text-muted">Motivo del Ajuste (para auditoría)</label>
+                                <input type="text" class="form-control form-control-sm" id="prodMotivo" name="motivo" value="Ajuste / reposición de cámara">
                             </div>
                         </div>
                     </div>
@@ -275,14 +256,14 @@ $csrf = tokenCsrf();
 
         <?php else: ?>
         <!-- ============================================================== -->
-        <!-- MODO UNIFICADO DE INGRESO Y ALTA DE PRODUCTOS (1 A 50 ÍTEMS)    -->
+        <!-- MODO UNIFICADO DE INGRESO DE HIELO A CÁMARA (1 A 50 ÍTEMS)     -->
         <!-- ============================================================== -->
         <!-- Encabezado -->
         <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
             <div>
                 <a href="admin.php" class="text-decoration-none text-muted small">← Volver al Inventario</a>
-                <h1 class="h3 fw-bold mt-1 mb-0">Ingreso de Productos</h1>
-                <p class="text-muted small mb-0">Alta individual o masiva de artículos al inventario.</p>
+                <h1 class="h3 fw-bold mt-1 mb-0">Ingreso de Producción a Cámara</h1>
+                <p class="text-muted small mb-0">Alta rápida individual o por lote de bolsas de hielo.</p>
             </div>
         </div>
 
@@ -290,32 +271,17 @@ $csrf = tokenCsrf();
         <div id="alertaError" class="alert alert-danger d-none mb-3" role="alert"></div>
         <div id="alertaExito" class="alert alert-success d-none mb-3" role="alert"></div>
 
-        <!-- 1. Proveedor y Comprobante de Compra -->
+        <!-- 1. Comprobante de Entrada -->
         <div class="seccion-card mb-4">
-            <h2 class="h5 fw-bold text-primary mb-3">1. Datos del Proveedor y Comprobante de Compra</h2>
+            <h2 class="h5 fw-bold text-primary mb-3">1. Comprobante / Parte de Producción</h2>
             <div class="p-3 bg-light rounded-3 border">
                 <div class="row g-3 align-items-center">
-                    <div class="col-12 col-md-5">
-                        <label class="form-label fw-bold" for="masivoProveedor">Proveedor *</label>
-                        <select class="form-select" id="masivoProveedor" required>
-                            <option value="">-- Seleccionar Proveedor --</option>
-                            <?php foreach ($proveedores as $prov): ?>
-                                <option value="<?= htmlspecialchars($prov['nombre'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars($prov['nombre'], ENT_QUOTES, 'UTF-8') ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="mt-1">
-                            <input type="text" class="form-control form-control-sm mt-1" id="masivoProveedorTexto" placeholder="O escribir nuevo proveedor...">
-                        </div>
+                    <div class="col-12 col-md-8">
+                        <label class="form-label fw-bold" for="masivoNumeroFactura">N° Remito / Lote de Producción</label>
+                        <input type="text" class="form-control" id="masivoNumeroFactura" placeholder="Ej: PROD-2026-001 o REM-000123">
                     </div>
 
-                    <div class="col-12 col-md-4">
-                        <label class="form-label fw-bold" for="masivoNumeroFactura">N° Factura / Remito</label>
-                        <input type="text" class="form-control" id="masivoNumeroFactura" placeholder="Ej: FC-A-0001-00123456">
-                    </div>
-
-                    <div class="col-12 col-md-3 d-flex align-items-center pt-md-4">
+                    <div class="col-12 col-md-4 d-flex align-items-center pt-md-4">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="masivoSinFactura">
                             <label class="form-check-label small" for="masivoSinFactura">Ingreso sin comprobante</label>
@@ -325,15 +291,15 @@ $csrf = tokenCsrf();
             </div>
         </div>
 
-        <!-- 2. Tabla Dinámica de Productos a Ingresar -->
+        <!-- 2. Tabla Dinámica de Presentaciones a Ingresar -->
         <div class="seccion-card mb-4">
             <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <div>
-                    <h2 class="h5 fw-bold text-primary mb-0">2. Artículos a Ingresar</h2>
-                    <small class="text-muted">Ingreso individual o en lote (hasta 50 filas).</small>
+                    <h2 class="h5 fw-bold text-primary mb-0">2. Presentaciones a Registrar</h2>
+                    <small class="text-muted">Carga rápida de bolsas de hielo (hasta 50 filas).</small>
                 </div>
                 <button type="button" class="btn btn-outline-primary fw-bold" id="btnAgregarFila">
-                    Añadir fila
+                    + Añadir fila
                 </button>
             </div>
 
@@ -342,15 +308,14 @@ $csrf = tokenCsrf();
                     <thead class="table-light small text-muted text-uppercase text-nowrap" style="font-size: 0.75rem;">
                         <tr>
                             <th style="width: 28px;" class="text-center">#</th>
-                            <th style="min-width: 140px;">Nombre *</th>
-                            <th style="min-width: 110px;">Categoría</th>
-                            <th style="min-width: 125px;">Código</th>
-                            <th style="min-width: 95px;">Presentación</th>
+                            <th style="min-width: 150px;">Nombre / Presentación *</th>
+                            <th style="min-width: 120px;">Categoría</th>
+                            <th style="min-width: 130px;">Código de Barras</th>
+                            <th style="min-width: 100px;">Empaque</th>
                             <th style="width: 75px;" class="text-center">Vta. Unid</th>
-                            <th style="width: 70px;">Cant. *</th>
-                            <th style="width: 80px;">Costo ($)</th>
-                            <th style="width: 80px;">Venta ($) *</th>
-                            <th style="width: 105px;">Vencimiento</th>
+                            <th style="width: 80px;">Bolsas *</th>
+                            <th style="width: 85px;">Costo ($)</th>
+                            <th style="width: 90px;">Venta ($) *</th>
                             <th style="width: 35px;" class="text-center"></th>
                         </tr>
                     </thead>
@@ -362,15 +327,15 @@ $csrf = tokenCsrf();
             <div class="p-3 bg-light rounded-3 border mb-3">
                 <div class="row text-center g-3">
                     <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Productos a registrar</span>
+                        <span class="text-muted small d-block">Presentaciones a registrar</span>
                         <strong class="fs-5 text-dark" id="resumenTotalProd">0</strong>
                     </div>
                     <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Unidades físicas totales</span>
+                        <span class="text-muted small d-block">Bolsas físicas totales</span>
                         <strong class="fs-5 text-dark" id="resumenTotalUnidades">0 un.</strong>
                     </div>
                     <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Valor total de venta estimado</span>
+                        <span class="text-muted small d-block">Valor de venta estimado en cámara</span>
                         <strong class="fs-5 text-success" id="resumenValorTotal">$ 0,00</strong>
                     </div>
                 </div>
@@ -380,7 +345,7 @@ $csrf = tokenCsrf();
             <div class="d-flex justify-content-between align-items-center pt-2">
                 <a href="admin.php" class="btn btn-outline-secondary">Cancelar</a>
                 <button type="button" class="btn btn-success px-4 py-3 fs-5 fw-bold shadow" id="btnGuardarLote">
-                    Guardar Ingreso
+                    Guardar Ingreso a Cámara
                 </button>
             </div>
         </div>
@@ -506,7 +471,7 @@ $csrf = tokenCsrf();
                         chkPermiteUnidad.checked = true;
                         chkPermiteUnidad.disabled = true;
                     }
-                    if (txtAyudaPermite) txtAyudaPermite.textContent = 'Los artículos con presentación "Unidad" se venden siempre por unidad individual.';
+                    if (txtAyudaPermite) txtAyudaPermite.textContent = 'Las bolsas individuales se venden por unidad suelta.';
                 }
             });
 
@@ -576,9 +541,9 @@ $csrf = tokenCsrf();
                         body: formData
                     });
                     const data = await resp.json().catch(() => ({}));
-                    if (!resp.ok) throw new Error(data.error || "No se pudo guardar el producto.");
+                    if (!resp.ok) throw new Error(data.error || "No se pudo guardar la presentación.");
 
-                    alertOk.textContent = data.mensaje || "¡Producto modificado exitosamente!";
+                    alertOk.textContent = data.mensaje || "¡Presentación modificada exitosamente!";
                     alertOk.classList.remove("d-none");
                     setTimeout(() => { window.location.href = "admin.php"; }, 1000);
                 } catch (err) {
@@ -614,7 +579,7 @@ $csrf = tokenCsrf();
                 tr.innerHTML = `
                     <td class="text-muted small text-center p-1">${indice}</td>
                     <td class="p-1">
-                        <input type="text" class="form-control form-control-sm masivo-nombre px-2" placeholder="Ej: Bolsa Hielo 2kg *" required>
+                        <input type="text" class="form-control form-control-sm masivo-nombre px-2" placeholder="Ej: Bolsa Hielo en Cubos 2kg *" required>
                     </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm masivo-cat px-1">
@@ -630,15 +595,15 @@ $csrf = tokenCsrf();
                     </td>
                     <td class="p-1">
                         <select class="form-select form-select-sm masivo-pres px-1 mb-1">
-                            <option value="unidad">Unidad</option>
+                            <option value="unidad">Bolsa (Unidad)</option>
                             <option value="caja">Caja</option>
-                            <option value="bulto">Bulto</option>
+                            <option value="bulto">Bulto / Pack</option>
                         </select>
-                        <input type="number" min="1" class="form-control form-control-sm masivo-unid-bulto px-1 d-none" placeholder="Unids/bulto" value="1">
+                        <input type="number" min="1" class="form-control form-control-sm masivo-unid-bulto px-1 d-none" placeholder="Bolsas/pack" value="1">
                     </td>
                     <td class="text-center align-middle p-1">
                         <div class="form-check form-switch d-inline-block m-0">
-                            <input class="form-check-input masivo-venta-unidad" type="checkbox" role="switch" title="¿Se puede vender por unidad suelta?" checked disabled>
+                            <input class="form-check-input masivo-venta-unidad" type="checkbox" role="switch" title="¿Se puede vender por bolsa suelta?" checked disabled>
                         </div>
                         <small class="d-block text-muted masivo-lbl-unid" style="font-size: 0.72rem;">Sí</small>
                     </td>
@@ -650,9 +615,6 @@ $csrf = tokenCsrf();
                     </td>
                     <td class="p-1">
                         <input type="number" step="0.01" min="0" class="form-control form-control-sm masivo-venta px-1 text-end" placeholder="0.00" value="0.00">
-                    </td>
-                    <td class="p-1">
-                        <input type="date" class="form-control form-control-sm masivo-venc px-1">
                     </td>
                     <td class="text-center p-1">
                         <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-del-fila" title="Quitar fila">✕</button>
@@ -748,7 +710,7 @@ $csrf = tokenCsrf();
 
             document.getElementById("btnAgregarFila").addEventListener("click", () => {
                 if (tbody.children.length >= 50) {
-                    alert("Se ha alcanzado el límite máximo de 50 productos por lote.");
+                    alert("Se ha alcanzado el límite máximo de 50 presentaciones por ingreso.");
                     return;
                 }
                 const nueva = crearFila(tbody.children.length + 1);
@@ -768,9 +730,6 @@ $csrf = tokenCsrf();
                 alertErr.classList.add("d-none");
                 alertOk.classList.add("d-none");
 
-                const selProv = document.getElementById("masivoProveedor");
-                const txtProv = document.getElementById("masivoProveedorTexto");
-                const proveedor = txtProv.value.trim() || selProv.value.trim();
                 const numFactura = inputFactura.value.trim();
                 const sinFactura = chkSinFactura.checked;
 
@@ -791,12 +750,11 @@ $csrf = tokenCsrf();
                     const stock = parseInt(tr.querySelector(".masivo-stock").value) || 0;
                     const costo = parseFloat(tr.querySelector(".masivo-costo").value) || 0;
                     const venta = parseFloat(tr.querySelector(".masivo-venta").value) || 0;
-                    const venc = tr.querySelector(".masivo-venc").value.trim();
 
                     if (nombre === "" && stock === 0 && venta === 0) return;
 
                     if (nombre === "") {
-                        errores.push(`Fila #${num}: El nombre del producto es obligatorio.`);
+                        errores.push(`Fila #${num}: El nombre de la presentación es obligatorio.`);
                         return;
                     }
                     if (venta <= 0) {
@@ -819,8 +777,7 @@ $csrf = tokenCsrf();
                         stock: stock,
                         precio_costo: costo,
                         precio_venta: venta,
-                        precio: venta,
-                        fecha_vencimiento: venc
+                        precio: venta
                     });
                 });
 
@@ -832,14 +789,14 @@ $csrf = tokenCsrf();
                 }
 
                 if (productosLote.length === 0) {
-                    alertErr.textContent = "Completá al menos un producto para registrar el ingreso.";
+                    alertErr.textContent = "Completá al menos una presentación para registrar el ingreso.";
                     alertErr.classList.remove("d-none");
                     return;
                 }
 
                 const btnSave = document.getElementById("btnGuardarLote");
                 btnSave.disabled = true;
-                btnSave.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Guardando ${productosLote.length} producto(s)...`;
+                btnSave.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Guardando ${productosLote.length} presentación(es)...`;
 
                 try {
                     const resp = await fetch("guardar_productos_masivo.php", {
@@ -849,7 +806,6 @@ $csrf = tokenCsrf();
                             "X-CSRF-Token": csrfToken
                         },
                         body: JSON.stringify({
-                            proveedor: proveedor,
                             numero_factura: numFactura,
                             sin_factura: sinFactura,
                             productos: productosLote
@@ -858,10 +814,10 @@ $csrf = tokenCsrf();
 
                     const data = await resp.json().catch(() => ({}));
                     if (!resp.ok) {
-                        throw new Error(data.error || "Error al procesar el ingreso de productos.");
+                        throw new Error(data.error || "Error al procesar el ingreso de hielo.");
                     }
 
-                    alertOk.innerHTML = `<strong>¡Ingreso registrado con éxito!</strong> ${data.mensaje || `Se guardaron ${data.total_guardados} productos en Firestore.`}`;
+                    alertOk.innerHTML = `<strong>¡Ingreso a cámara registrado con éxito!</strong> ${data.mensaje || `Se guardaron ${data.total_guardados} presentaciones en Firestore.`}`;
                     alertOk.classList.remove("d-none");
                     window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -873,7 +829,7 @@ $csrf = tokenCsrf();
                     alertErr.textContent = err.message;
                     alertErr.classList.remove("d-none");
                     btnSave.disabled = false;
-                    btnSave.innerHTML = "Guardar Ingreso";
+                    btnSave.innerHTML = "Guardar Ingreso a Cámara";
                     window.scrollTo({ top: 0, behavior: "smooth" });
                 }
             });
