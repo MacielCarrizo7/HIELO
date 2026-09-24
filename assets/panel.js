@@ -1619,7 +1619,7 @@ document.addEventListener("keydown", async (e) => {
 async function cargarVentas(filtros = {}) {
     const tbody = document.getElementById("ventasBody");
     if (!tbody) return;
-    const columnas = esAdmin ? 12 : 10;
+    const columnas = esAdmin ? 11 : 10;
     mensajeEnTabla(tbody, columnas, "Cargando ventas...");
 
     const params = new URLSearchParams();
@@ -1687,10 +1687,6 @@ async function cargarVentas(filtros = {}) {
             }
             estadoTd.appendChild(badge);
             fila.appendChild(estadoTd);
-
-            if (esAdmin) {
-                fila.append(celda(venta.fecha_modificacion ? fechaLegible(venta.fecha_modificacion) : "—"));
-            }
 
             const accion = document.createElement("td");
             accion.className = "text-end";

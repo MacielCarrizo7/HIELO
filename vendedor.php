@@ -379,6 +379,6 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/panel.js"></script>
+    <script src="assets/panel.js?v=<?= file_exists(__DIR__ . '/assets/panel.js') ? filemtime(__DIR__ . '/assets/panel.js') : time() ?>"></script>
 </body>
 </html>
