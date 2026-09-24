@@ -31,7 +31,14 @@ try {
         $todasLasVentas = $firestore->obtenerColeccion("ventas");
         foreach ($todasLasVentas as $v) {
             if (($v["ticket_id"] ?? "") === $ticketId) {
-                $itemsVenta[] = $v;
+                if (!empty($v["items"]) && is_array($v["items"])) {
+                    foreach ($v["items"] as $it) {
+                        $itDoc = array_merge($v, $it);
+                        $itemsVenta[] = $itDoc;
+                    }
+                } else {
+                    $itemsVenta[] = $v;
+                }
             }
         }
     }
@@ -42,14 +49,24 @@ try {
             $ticketAsoc = (string)($doc["ticket_id"] ?? "");
             if ($ticketAsoc !== "") {
                 $ticketCod = $ticketAsoc;
-                $todasLasVentas = $firestore->obtenerColeccion("ventas");
-                foreach ($todasLasVentas as $v) {
-                    if (($v["ticket_id"] ?? "") === $ticketAsoc) {
-                        $itemsVenta[] = $v;
-                    }
+            }
+            if (!empty($doc["items"]) && is_array($doc["items"])) {
+                foreach ($doc["items"] as $it) {
+                    $itDoc = array_merge($doc, $it);
+                    $itemsVenta[] = $itDoc;
                 }
             } else {
-                $itemsVenta[] = $doc;
+                if ($ticketAsoc !== "") {
+                    $todasLasVentas = $firestore->obtenerColeccion("ventas");
+                    foreach ($todasLasVentas as $v) {
+                        if (($v["ticket_id"] ?? "") === $ticketAsoc) {
+                            $itemsVenta[] = $v;
+                        }
+                    }
+                }
+                if (empty($itemsVenta)) {
+                    $itemsVenta[] = $doc;
+                }
             }
         }
     }

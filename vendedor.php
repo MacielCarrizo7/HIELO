@@ -166,11 +166,11 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
                     </form>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 tabla-stock-responsive">
                             <thead>
                                 <tr>
-                                    <th>Cód. / Barras</th>
                                     <th>Presentación / Producto</th>
+                                    <th>Cód. / Barras</th>
                                     <th>Empaque</th>
                                     <th>Precio Unitario</th>
                                     <th>Stock en Cámara</th>

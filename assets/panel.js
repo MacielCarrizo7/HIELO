@@ -128,8 +128,24 @@ function renderizarFilasProductos(productos) {
     productos.forEach((producto) => {
         const fila = document.createElement("tr");
 
-        // 1. Código / Código de Barras
+        // 1. Nombre y Presentación (Header en Móviles)
+        const nombreTd = document.createElement("td");
+        nombreTd.className = "prod-mob-header";
+        const nombreTitulo = document.createElement("div");
+        nombreTitulo.className = "prod-mob-title fw-bold text-dark";
+        nombreTitulo.textContent = producto.nombre;
+        nombreTd.appendChild(nombreTitulo);
+        if (producto.descripcion) {
+            const desc = document.createElement("small");
+            desc.className = "text-muted d-block";
+            desc.textContent = producto.descripcion;
+            nombreTd.appendChild(desc);
+        }
+        fila.appendChild(nombreTd);
+
+        // 2. Código / Código de Barras
         const cbTd = document.createElement("td");
+        cbTd.setAttribute("data-label", "Cód. / Barras");
         const cbCont = document.createElement("div");
         if (producto.codigo_barras) {
             const cbBadge = document.createElement("span");
@@ -147,22 +163,9 @@ function renderizarFilasProductos(productos) {
         cbTd.appendChild(cbCont);
         fila.appendChild(cbTd);
 
-        // 2. Nombre / Presentación
-        const nombreTd = document.createElement("td");
-        const nombreTitulo = document.createElement("div");
-        nombreTitulo.className = "fw-bold text-dark";
-        nombreTitulo.textContent = producto.nombre;
-        nombreTd.appendChild(nombreTitulo);
-        if (producto.descripcion) {
-            const desc = document.createElement("small");
-            desc.className = "text-muted d-block";
-            desc.textContent = producto.descripcion;
-            nombreTd.appendChild(desc);
-        }
-        fila.appendChild(nombreTd);
-
         // 3. Presentación / Empaque
         const presTd = document.createElement("td");
+        presTd.setAttribute("data-label", "Empaque");
         const presNombre = producto.presentacion ? producto.presentacion.toUpperCase() : "UNIDAD";
         if (producto.presentacion && producto.presentacion.toLowerCase() !== "unidad") {
             const permite = (producto.permite_venta_unidad !== false && producto.permite_venta_unidad !== 0 && producto.permite_venta_unidad !== "0");
@@ -173,10 +176,13 @@ function renderizarFilasProductos(productos) {
         fila.appendChild(presTd);
 
         // 4. Precio Unitario
-        fila.append(celda(formatoMoneda.format(producto.precio), "fw-bold text-primary"));
+        const precioTd = celda(formatoMoneda.format(producto.precio), "fw-bold text-primary");
+        precioTd.setAttribute("data-label", "Precio Unitario");
+        fila.appendChild(precioTd);
 
         // 5. Stock en Cámara
         const stockTd = document.createElement("td");
+        stockTd.setAttribute("data-label", "Stock en Cámara");
         const stock = Number(producto.stock);
         const unidadesPorBulto = Number(producto.unidades_por_bulto) || 1;
         const badge = document.createElement("span");
@@ -200,7 +206,7 @@ function renderizarFilasProductos(productos) {
 
         // 6. Acciones (Historial + Editar + Dar de Baja)
         const accion = document.createElement("td");
-        accion.className = "text-end";
+        accion.className = "text-end prod-mob-acciones";
         const grupo = document.createElement("div");
         grupo.className = "d-inline-flex gap-1";
 

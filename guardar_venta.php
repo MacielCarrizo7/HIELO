@@ -65,9 +65,6 @@ try {
 
     // 1. Pre-validar stock y datos de cada producto en el carrito
     $itemsValidados = [];
-    $totalVentaGeneral = 0;
-    $totalDescuentoGeneral = 0;
-    $totalUnidadesGeneral = 0;
 
     foreach ($items as $idx => $item) {
         $numItem = $idx + 1;
@@ -132,10 +129,6 @@ try {
         $descuentoMonto = round($subtotal * ($descPorc / 100), 2);
         $totalItem = max(0, $subtotal - $descuentoMonto);
 
-        $totalVentaGeneral += $totalItem;
-        $totalDescuentoGeneral += $descuentoMonto;
-        $totalUnidadesGeneral += $totalUnidades;
-
         $itemsValidados[] = [
             "producto_id" => $prodId,
             "producto_nombre" => (string)$producto["nombre"],
@@ -156,19 +149,30 @@ try {
     $usuarioNombre = trim(($_SESSION["usuario_nombre"] ?? "Usuario") . " " . ($_SESSION["usuario_apellido"] ?? ""));
     $fechaActual = date("Y-m-d H:i:s");
     $ticketId = "TK-" . date("Ymd-His") . "-" . str_pad((string)random_int(100, 999), 3, "0", STR_PAD_LEFT);
-    $ventasRegistradas = [];
 
-    // 2. Ejecutar guardado de cada ítem del carrito
+    // 2. Unificación en UNA SOLA VENTA MULTIPRODUCTO
+    $ventaId = FirestoreConexion::obtenerSiguienteIdVenta();
+    
+    $nombresProductos = [];
+    $itemsDetalleResumen = [];
+    $totalUnidadesGeneral = 0;
+    $totalSubtotalGeneral = 0;
+    $totalDescuentoGeneral = 0;
+    $totalVentaGeneral = 0;
+
     foreach ($itemsValidados as $iv) {
-        $ventaId = FirestoreConexion::obtenerSiguienteIdVenta();
         $prodId = $iv["producto_id"];
         $totalUnidades = $iv["total_unidades"];
         $nuevoStock = $iv["stock_actual"] - $totalUnidades;
 
-        // Venta con datos de cliente directo y vendedor logueado
-        $ventaDoc = [
-            "id" => $ventaId,
-            "ticket_id" => $ticketId,
+        $totalUnidadesGeneral += $totalUnidades;
+        $totalSubtotalGeneral += $iv["subtotal"];
+        $totalDescuentoGeneral += $iv["descuento_monto"];
+        $totalVentaGeneral += $iv["total"];
+
+        $nombresProductos[] = "{$iv['producto_nombre']} ({$totalUnidades} un.)";
+
+        $itemsDetalleResumen[] = [
             "producto_id" => $prodId,
             "producto_nombre" => $iv["producto_nombre"],
             "tipo_venta" => $iv["tipo_venta"],
@@ -178,63 +182,13 @@ try {
             "subtotal" => $iv["subtotal"],
             "descuento_porcentaje" => $iv["descuento_porcentaje"],
             "descuento_monto" => $iv["descuento_monto"],
-            "total" => $iv["total"],
-            "usuario_id" => $usuarioId,
-            "vendedor_id" => $usuarioId,
-            "vendedor" => $usuarioNombre,
-            "vendedor_nombre" => $usuarioNombre,
-            "cliente_id" => $clienteId,
-            "cliente_nombre" => $clienteNombre,
-            "cliente_telefono" => $clienteTelefono,
-            "cliente_direccion" => $clienteDireccion,
-            "estado" => "ACTIVA",
-            "fecha" => $fechaActual
+            "total" => $iv["total"]
         ];
-        $firestore->guardarDocumento("ventas", (string)$ventaId, $ventaDoc);
 
-        // Detalle de la venta
-        $detalleDoc = [
-            "id" => $ventaId,
-            "venta_id" => $ventaId,
-            "ticket_id" => $ticketId,
-            "producto_id" => $prodId,
-            "producto_nombre" => $iv["producto_nombre"],
-            "tipo_venta" => $iv["tipo_venta"],
-            "cantidad_empaque" => $iv["cantidad_empaque"],
-            "cantidad" => $totalUnidades,
-            "precio_unitario" => $iv["precio_unitario"],
-            "subtotal" => $iv["subtotal"],
-            "descuento_monto" => $iv["descuento_monto"],
-            "total" => $iv["total"],
-            "usuario_id" => $usuarioId,
-            "vendedor" => $usuarioNombre,
-            "vendedor_nombre" => $usuarioNombre,
-            "cliente_nombre" => $clienteNombre,
-            "cliente_telefono" => $clienteTelefono,
-            "cliente_direccion" => $clienteDireccion
-        ];
-        $firestore->guardarDocumento("detalle_ventas", (string)$ventaId, $detalleDoc);
-
-        // Descontar Stock
+        // Descontar Stock en Firestore para cada producto
         $firestore->actualizarCampos("productos", (string)$prodId, ["stock" => $nuevoStock]);
 
-        // Historial
-        $histId = FirestoreConexion::obtenerSiguienteIdHistorial();
-        $historialDoc = [
-            "id" => $histId,
-            "venta_id" => $ventaId,
-            "ticket_id" => $ticketId,
-            "usuario_id" => $usuarioId,
-            "tipo" => "VENTA_CREADA",
-            "cantidad_nueva" => $totalUnidades,
-            "total_nuevo" => $iv["total"],
-            "estado_anterior" => "NUEVA",
-            "estado_nuevo" => "ACTIVA",
-            "fecha" => $fechaActual
-        ];
-        $firestore->guardarDocumento("venta_historial", (string)$histId, $historialDoc);
-
-        // Trazabilidad de movimientos
+        // Registrar trazabilidad de movimientos
         $infoContactoCliente = ($clienteTelefono !== "" || $clienteDireccion !== "") ? " [Tel: {$clienteTelefono} | Dir: {$clienteDireccion}]" : "";
         FirestoreConexion::registrarMovimientoProducto(
             productoId: $prodId,
@@ -248,25 +202,96 @@ try {
             usuarioId: $usuarioId,
             usuarioNombre: $usuarioNombre
         );
-
-        $ventasRegistradas[] = $ventaId;
     }
+
+    $esVentaUnica = (count($itemsValidados) === 1);
+    $productoNombreResumen = $esVentaUnica ? $itemsValidados[0]["producto_nombre"] : implode(" • ", $nombresProductos);
+    $tipoVentaResumen = $esVentaUnica ? $itemsValidados[0]["tipo_venta"] : "combo";
+    $precioUnitarioResumen = $esVentaUnica ? $itemsValidados[0]["precio_unitario"] : ($totalUnidadesGeneral > 0 ? round($totalVentaGeneral / $totalUnidadesGeneral, 2) : 0);
+    $descuentoPorcResumen = ($totalSubtotalGeneral > 0 && $totalDescuentoGeneral > 0) ? round(($totalDescuentoGeneral / $totalSubtotalGeneral) * 100, 2) : ($esVentaUnica ? $itemsValidados[0]["descuento_porcentaje"] : 0);
+
+    // Guardar Documento Único de Venta en Firestore
+    $ventaDoc = [
+        "id" => $ventaId,
+        "ticket_id" => $ticketId,
+        "producto_id" => $esVentaUnica ? $itemsValidados[0]["producto_id"] : null,
+        "producto_nombre" => $productoNombreResumen,
+        "tipo_venta" => $tipoVentaResumen,
+        "cantidad_empaque" => $esVentaUnica ? $itemsValidados[0]["cantidad_empaque"] : $totalUnidadesGeneral,
+        "cantidad" => $totalUnidadesGeneral,
+        "precio_unitario" => $precioUnitarioResumen,
+        "subtotal" => $totalSubtotalGeneral,
+        "descuento_porcentaje" => $descuentoPorcResumen,
+        "descuento_monto" => $totalDescuentoGeneral,
+        "total" => $totalVentaGeneral,
+        "items" => $itemsDetalleResumen,
+        "usuario_id" => $usuarioId,
+        "vendedor_id" => $usuarioId,
+        "vendedor" => $usuarioNombre,
+        "vendedor_nombre" => $usuarioNombre,
+        "cliente_id" => $clienteId,
+        "cliente_nombre" => $clienteNombre,
+        "cliente_telefono" => $clienteTelefono,
+        "cliente_direccion" => $clienteDireccion,
+        "estado" => "ACTIVA",
+        "fecha" => $fechaActual
+    ];
+    $firestore->guardarDocumento("ventas", (string)$ventaId, $ventaDoc);
+
+    // Guardar Detalle en detalle_ventas
+    $detalleDoc = [
+        "id" => $ventaId,
+        "venta_id" => $ventaId,
+        "ticket_id" => $ticketId,
+        "items" => $itemsDetalleResumen,
+        "total_unidades" => $totalUnidadesGeneral,
+        "subtotal" => $totalSubtotalGeneral,
+        "descuento_monto" => $totalDescuentoGeneral,
+        "total" => $totalVentaGeneral,
+        "usuario_id" => $usuarioId,
+        "vendedor" => $usuarioNombre,
+        "vendedor_nombre" => $usuarioNombre,
+        "cliente_nombre" => $clienteNombre,
+        "cliente_telefono" => $clienteTelefono,
+        "cliente_direccion" => $clienteDireccion,
+        "fecha" => $fechaActual
+    ];
+    $firestore->guardarDocumento("detalle_ventas", (string)$ventaId, $detalleDoc);
+
+    // Historial de la transacción
+    $histId = FirestoreConexion::obtenerSiguienteIdHistorial();
+    $historialDoc = [
+        "id" => $histId,
+        "venta_id" => $ventaId,
+        "ticket_id" => $ticketId,
+        "usuario_id" => $usuarioId,
+        "tipo" => "VENTA_CREADA",
+        "cantidad_nueva" => $totalUnidadesGeneral,
+        "total_nuevo" => $totalVentaGeneral,
+        "items_count" => count($itemsValidados),
+        "estado_anterior" => "NUEVA",
+        "estado_nuevo" => "ACTIVA",
+        "fecha" => $fechaActual
+    ];
+    $firestore->guardarDocumento("venta_historial", (string)$histId, $historialDoc);
 
     responderJson([
         "success" => true,
+        "id" => $ventaId,
         "ticket_id" => $ticketId,
         "cliente" => $clienteNombre,
-        "total_items" => count($ventasRegistradas),
+        "total_items" => count($itemsValidados),
         "total_unidades" => $totalUnidadesGeneral,
         "descuento_total" => $totalDescuentoGeneral,
         "total" => $totalVentaGeneral,
-        "ventas_ids" => $ventasRegistradas,
-        "mensaje" => "Venta de " . count($ventasRegistradas) . " producto(s) a '{$clienteNombre}' registrada con éxito."
+        "ventas_ids" => [$ventaId],
+        "mensaje" => "Venta #" . $ventaId . " [" . $ticketId . "] de " . count($itemsValidados) . " producto(s) a '{$clienteNombre}' registrada con éxito."
     ], 201);
+
 } catch (DomainException $e) {
-    responderJson(["error" => $e->getMessage()], 400);
+    responderJson(["error" => $e->getMessage()], 422);
 } catch (Throwable $e) {
-    error_log("Error al guardar venta en Firestore: " . $e->getMessage());
+    error_log("Error al guardar venta unificada en Firestore: " . $e->getMessage());
     responderJson(["error" => "No se pudo registrar la venta: " . $e->getMessage()], 500);
 }
 ?>

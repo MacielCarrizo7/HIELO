@@ -124,11 +124,11 @@ $csrf = tokenCsrf();
                         </select>
                     </div>
 
-                    <!-- Panel Colapsable de Selección Rápida (Quick-Pick Grid) -->
-                    <div id="panelQuickPick" class="border rounded-3 p-2 mb-3 bg-light d-none" style="max-height: 260px; overflow-y: auto;">
+                    <!-- Panel de Selección Rápida Siempre Visible (Quick-Pick POS Grid) -->
+                    <div id="panelQuickPick" class="border rounded-3 p-3 mb-3 bg-light shadow-sm" style="max-height: 290px; overflow-y: auto;">
                         <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                            <span class="small fw-bold text-muted" id="quickPickTitulo">Catálogo Rápido de Hielo</span>
-                            <small class="text-muted">Clic para seleccionar</small>
+                            <span class="small fw-bold text-primary" id="quickPickTitulo">⚡ Selección Rápida de Hielo</span>
+                            <small class="text-muted">Clic en <strong>+ 1 Bolsa</strong> para agregar directo al ticket</small>
                         </div>
                         <div class="row g-2" id="gridQuickPick"></div>
                     </div>
@@ -459,6 +459,53 @@ $csrf = tokenCsrf();
             });
         }
 
+        function agregarDirectoAlCarrito(p, cantidad = 1) {
+            const errBox = document.getElementById("alertaError");
+            if (errBox) errBox.classList.add("d-none");
+
+            const stockNum = Number(p.stock) || 0;
+            if (stockNum <= 0) {
+                alert(`No hay stock disponible en cámara para "${p.nombre}".`);
+                return;
+            }
+
+            const yaEnCarrito = carrito
+                .filter(it => it.producto_id === p.id)
+                .reduce((acc, it) => acc + (it.total_unidades || 0), 0);
+
+            if ((yaEnCarrito + cantidad) > stockNum) {
+                alert(`Stock insuficiente para "${p.nombre}". Disponible: ${stockNum} un. (Ya hay ${yaEnCarrito} un. en el ticket).`);
+                return;
+            }
+
+            const precio = Number(p.precio_venta || p.precio) || 0;
+            const itemExistente = carrito.find(it => it.producto_id === p.id && it.tipo_venta === "unidad" && it.descuento_porcentaje === 0);
+
+            if (itemExistente) {
+                itemExistente.cantidad_empaque += cantidad;
+                itemExistente.total_unidades += cantidad;
+                itemExistente.subtotal = itemExistente.total_unidades * precio;
+                itemExistente.total = itemExistente.subtotal;
+            } else {
+                carrito.push({
+                    producto_id: p.id,
+                    producto_nombre: p.nombre,
+                    tipo_venta: "unidad",
+                    cantidad_empaque: cantidad,
+                    unidades_por_bulto: 1,
+                    total_unidades: cantidad,
+                    precio_unitario: precio,
+                    descuento_porcentaje: 0,
+                    descuento_monto: 0,
+                    subtotal: precio * cantidad,
+                    total: precio * cantidad,
+                    stock_disponible: stockNum
+                });
+            }
+
+            renderizarCarrito();
+        }
+
         function renderizarQuickPick() {
             const grid = document.getElementById("gridQuickPick");
             const lblTitulo = document.getElementById("quickPickTitulo");
@@ -468,38 +515,67 @@ $csrf = tokenCsrf();
             if (categoriaFiltroActiva !== "") {
                 const cLower = categoriaFiltroActiva.toLowerCase();
                 prodsMostrar = prodsMostrar.filter(p => (p.categoria_nombre || p.categoria || "").toLowerCase() === cLower);
-                lblTitulo.textContent = `Hielo en "${categoriaFiltroActiva}" (${prodsMostrar.length})`;
+                lblTitulo.textContent = `⚡ Hielo en "${categoriaFiltroActiva}" (${prodsMostrar.length})`;
             } else {
-                lblTitulo.textContent = `Presentaciones Rápidas (${prodsMostrar.length})`;
+                lblTitulo.textContent = `⚡ Selección Rápida de Hielo (${prodsMostrar.length} disponibles)`;
             }
 
             if (prodsMostrar.length === 0) {
-                grid.innerHTML = `<div class="col-12 text-center text-muted small py-2">No hay artículos registrados para esta categoría.</div>`;
+                grid.innerHTML = `<div class="col-12 text-center text-muted small py-2">No hay presentaciones registradas para esta categoría.</div>`;
                 return;
             }
 
             grid.replaceChildren();
-            prodsMostrar.slice(0, 12).forEach(p => {
+            prodsMostrar.forEach(p => {
                 const col = document.createElement("div");
                 col.className = "col-6 col-sm-4 col-md-3";
 
                 const card = document.createElement("div");
                 card.className = "p-2 bg-white border rounded-3 h-100 d-flex flex-column justify-content-between shadow-xs";
-                card.style.cursor = "pointer";
 
-                const stockBadge = p.stock > 0 ? `<span class="badge text-bg-light text-muted small">${p.stock} un.</span>` : `<span class="badge text-bg-danger small">Agotado</span>`;
+                const stockNum = Number(p.stock) || 0;
+                const stockBadge = stockNum > 0 
+                    ? `<span class="badge ${stockNum <= 5 ? 'text-bg-warning' : 'text-bg-light text-muted'} small">${stockNum} un.</span>` 
+                    : `<span class="badge text-bg-danger small">Agotado</span>`;
 
                 card.innerHTML = `
                     <div class="mb-1">
-                        <span class="badge bg-secondary bg-opacity-25 text-dark small mb-1 text-truncate d-inline-block" style="max-width: 100%; font-size: 0.7rem;">${escapeHtml(p.categoria_nombre || "Hielo")}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-primary bg-opacity-10 text-primary small text-truncate" style="max-width: 65%; font-size: 0.68rem;">${escapeHtml(p.categoria_nombre || "Hielo")}</span>
+                            ${stockBadge}
+                        </div>
                         <div class="fw-bold text-dark small text-truncate" title="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top">
-                        <span class="fw-bold text-success small">${formatoMoneda.format(p.precio_venta)}</span>
-                        ${stockBadge}
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center my-1 pt-1 border-top">
+                            <span class="fw-bold text-primary small">${formatoMoneda.format(p.precio_venta)}</span>
+                            <span class="text-muted small" style="font-size: 0.7rem;">x bolsa</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold py-1 btn-quick-add ${stockNum <= 0 ? 'disabled' : ''}" style="font-size: 0.78rem;">
+                            <i class="bi bi-plus-circle me-1"></i> + 1 Bolsa
+                        </button>
                     </div>
                 `;
 
+                // Botón directo de agregar 1 bolsa
+                const btnAdd = card.querySelector(".btn-quick-add");
+                if (btnAdd) {
+                    btnAdd.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        agregarDirectoAlCarrito(p, 1);
+                        btnAdd.classList.remove("btn-primary");
+                        btnAdd.classList.add("btn-success");
+                        btnAdd.innerHTML = '<i class="bi bi-check2"></i> ¡Agregado!';
+                        setTimeout(() => {
+                            btnAdd.classList.remove("btn-success");
+                            btnAdd.classList.add("btn-primary");
+                            btnAdd.innerHTML = '<i class="bi bi-plus-circle me-1"></i> + 1 Bolsa';
+                        }, 600);
+                    });
+                }
+
+                // Clic en el cuerpo de la tarjeta para cargar al calculador detallado
+                card.style.cursor = "pointer";
                 card.addEventListener("click", () => {
                     seleccionarProducto(p);
                 });
