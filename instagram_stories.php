@@ -112,28 +112,27 @@ try {
             position: relative;
             color: #ffffff;
             box-sizing: border-box;
+            background-image: url('assets/FONDO HISTORIA.jpg');
             background-size: cover;
             background-position: center;
+            background-repeat: no-repeat;
+            background-color: rgba(0, 0, 0, 0.5);
+            background-blend-mode: overlay;
             overflow: hidden;
         }
 
-        /* Temas de Fondo */
-        .theme-glaciar {
-            background: radial-gradient(circle at 50% 10%, rgba(56, 189, 248, 0.4) 0%, transparent 60%),
-                        radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.25) 0%, transparent 50%),
-                        linear-gradient(175deg, #034b75 0%, #072a4a 45%, #031526 100%);
+        /* Variantes de Tinte Overlay sobre la Imagen de Fondo */
+        .overlay-standard {
+            background-color: rgba(0, 0, 0, 0.5) !important;
         }
-        .theme-polar-night {
-            background: radial-gradient(circle at 50% 15%, rgba(125, 211, 252, 0.35) 0%, transparent 55%),
-                        linear-gradient(175deg, #0f172a 0%, #1e293b 40%, #082f49 100%);
+        .overlay-dark {
+            background-color: rgba(0, 0, 0, 0.65) !important;
         }
-        .theme-cyber-ice {
-            background: radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.45) 0%, transparent 60%),
-                        linear-gradient(175deg, #0284c7 0%, #1d4ed8 45%, #312e81 100%);
+        .overlay-glaciar {
+            background-color: rgba(3, 75, 117, 0.55) !important;
         }
-        .theme-arctic-frost {
-            background: radial-gradient(circle at 50% 10%, rgba(186, 230, 253, 0.6) 0%, transparent 55%),
-                        linear-gradient(175deg, #0284c7 0%, #0369a1 40%, #0c4a6e 100%);
+        .overlay-polar {
+            background-color: rgba(15, 23, 42, 0.6) !important;
         }
 
         /* Escarcha y Brillo de Fondo */
@@ -153,7 +152,7 @@ try {
                 radial-gradient(2px 2px at 280px 420px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
                 radial-gradient(1px 1px at 40px 520px, #ffffff, rgba(0,0,0,0));
             background-repeat: repeat;
-            opacity: 0.65;
+            opacity: 0.45;
         }
 
         /* Badge Superior */
@@ -161,17 +160,17 @@ try {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            background: rgba(255, 255, 255, 0.18);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             padding: 4px 12px;
             border-radius: 50px;
             font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             color: #ffffff;
         }
 
@@ -180,29 +179,29 @@ try {
         ======================================================= */
         .story-title-3d {
             font-family: var(--story-font-impact);
-            font-size: 2.1rem;
+            font-size: 2.15rem;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.02em;
-            line-height: 1;
+            letter-spacing: 0.03em;
+            line-height: 1.05;
             margin: 4px 0 2px 0;
             text-align: center;
-            background: linear-gradient(180deg, #ffffff 0%, #e0f2fe 35%, #7dd3fc 70%, #0284c7 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 30%, #bae6fd 65%, #38bdf8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 2px 0px #0284c7) 
-                    drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6))
-                    drop-shadow(0 0 12px rgba(56, 189, 248, 0.8));
+                    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85))
+                    drop-shadow(0 0 16px rgba(56, 189, 248, 0.9));
         }
 
         .story-subtitle {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             text-align: center;
-            color: #bae6fd;
-            font-weight: 600;
+            color: #e0f2fe;
+            font-weight: 700;
             letter-spacing: 0.02em;
             margin-bottom: 4px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.6);
         }
 
         /* =======================================================
@@ -225,20 +224,20 @@ try {
             display: flex;
             justify-content: center;
             align-items: center;
-            filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
         }
 
         /* =======================================================
            RECUADRO DE PRECIOS REALES FIRESTORE (Glassmorphism)
         ======================================================= */
         .story-pricing-box {
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
             border-radius: 16px;
-            padding: 8px 10px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            padding: 9px 11px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
             margin-bottom: 8px;
         }
 
@@ -248,11 +247,11 @@ try {
             justify-content: space-between;
             padding-bottom: 4px;
             margin-bottom: 4px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .story-pricing-title {
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -260,6 +259,7 @@ try {
             display: flex;
             align-items: center;
             gap: 4px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
         }
 
         .story-items-list {
@@ -271,14 +271,14 @@ try {
         }
 
         .story-price-row {
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 10px;
             padding: 5px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
         }
 
         .story-price-info {
@@ -289,26 +289,28 @@ try {
 
         .story-prod-name {
             font-family: var(--story-font-heading);
-            font-size: 0.86rem;
+            font-size: 0.88rem;
             font-weight: 800;
             line-height: 1.1;
             color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
         }
 
         .story-prod-desc {
-            font-size: 0.62rem;
+            font-size: 0.64rem;
             color: #bae6fd;
-            font-weight: 500;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
         }
 
         .story-prod-price {
             font-family: var(--story-font-impact);
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 900;
             background: linear-gradient(180deg, #ffffff 0%, #38bdf8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
             white-space: nowrap;
         }
 
@@ -316,13 +318,14 @@ try {
            BANNER FOOTER WHATSAPP & CONTACTO
         ======================================================= */
         .story-footer-cta {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 14px;
             padding: 8px 10px;
             text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
         .story-whatsapp-btn {
@@ -341,10 +344,11 @@ try {
         }
 
         .story-footer-text {
-            font-size: 0.64rem;
-            color: #e2e8f0;
+            font-size: 0.65rem;
+            color: #f1f5f9;
             margin-top: 4px;
-            font-weight: 500;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
         }
 
         /* Panel de Controles Laterales */
@@ -407,12 +411,12 @@ try {
                             </select>
                         </div>
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold">Tema de Fondo</label>
+                            <label class="form-label small fw-bold">Filtro de Overlay (Fondo Personalizado)</label>
                             <select id="controlTemaFondo" class="form-select">
-                                <option value="theme-glaciar" selected>❄️ Azul Glaciar Luminoso</option>
-                                <option value="theme-polar-night">🌌 Noche Polar Profunda</option>
-                                <option value="theme-cyber-ice">⚡ Cyber Ice Neón</option>
-                                <option value="theme-arctic-frost">🏔️ Escarcha Ártica</option>
+                                <option value="overlay-standard" selected>🌑 Overlay Oscuro 50% (Recomendado)</option>
+                                <option value="overlay-dark">🌚 Overlay Oscuro 65% (Mayor Contraste)</option>
+                                <option value="overlay-glaciar">❄️ Overlay Tinte Glaciar</option>
+                                <option value="overlay-polar">🌌 Overlay Tinte Azul Noche</option>
                             </select>
                         </div>
                     </div>
@@ -511,7 +515,7 @@ try {
                         <!-- Marco de Celular con Story -->
                         <div class="phone-frame mb-3">
                             <div class="phone-screen">
-                                <div id="storyCanvasExport" class="story-canvas theme-glaciar">
+                                <div id="storyCanvasExport" class="story-canvas overlay-standard">
                                     
                                     <!-- Escarcha de fondo -->
                                     <div class="frost-overlay"></div>
