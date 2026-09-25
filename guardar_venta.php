@@ -116,29 +116,29 @@ try {
 
         $nombreProd = (string) ($producto["nombre"] ?? "Producto #{$prodId}");
         $presProducto = (string) ($producto["presentacion"] ?? "unidad");
-        $permiteVentaUnidad = isset($producto["permite_venta_unidad"]) ? (bool)$producto["permite_venta_unidad"] : ($presProducto === "unidad");
-
-        // Validar que no se intente vender por unidad si está deshabilitado
-        if ($tipoVenta === "unidad" && $presProducto !== "unidad" && !$permiteVentaUnidad) {
-            throw new DomainException("Ítem #{$numItem} ('{$nombreProd}'): No se permite la venta por unidad suelta. Debe venderse en su presentación empaquetada ({$presProducto}).");
-        }
-
-        // Validar que no se intente vender en una presentación empaquetada que no corresponde
-        if ($tipoVenta !== "unidad" && $tipoVenta !== $presProducto) {
-            throw new DomainException("Ítem #{$numItem} ('{$nombreProd}'): Presentación '{$tipoVenta}' no permitida. Este producto está configurado como '{$presProducto}'.");
-        }
-
+        $esMayorista = !empty($item["es_mayorista"]);
         $unidadesPorEmpaque = max(1, (int) ($producto["unidades_por_bulto"] ?? 1));
-        $totalUnidades = ($tipoVenta === "caja" || $tipoVenta === "bulto") ? ($cant * $unidadesPorEmpaque) : $cant;
+
+        // Calcular total de unidades de stock a descontar
+        if ($esMayorista) {
+            // En venta por mayor en el POS, $cant representa directamente la cantidad de bolsas físicas
+            $totalUnidades = $cant;
+        } elseif (($tipoVenta === "caja" || $tipoVenta === "bulto") && $presProducto !== "unidad" && $unidadesPorEmpaque > 1) {
+            // Venta tradicional de packs/cajas cerradas donde cada bulto contiene varias unidades
+            $totalUnidades = $cant * $unidadesPorEmpaque;
+        } else {
+            // Venta directa por unidad / bolsa
+            $totalUnidades = $cant;
+        }
+
         $stockActual = (int) ($producto["stock"] ?? 0);
 
         if ($stockActual < $totalUnidades) {
-            throw new DomainException("Stock insuficiente para '{$nombreProd}'. Disponible: {$stockActual} un. (solicitadas: {$totalUnidades} un.).");
+            throw new DomainException("Stock insuficiente para '{$nombreProd}'. Disponible en cámara: {$stockActual} un. (solicitadas: {$totalUnidades} un.).");
         }
 
         // Respetar precio unitario personalizado / por mayor si fue enviado
         $precioEnviado = isset($item["precio_unitario"]) ? (float)$item["precio_unitario"] : 0.0;
-        $esMayorista = !empty($item["es_mayorista"]);
         $precioCatalogo = (float)($producto["precio"] ?? 0);
 
         if ($precioEnviado > 0) {
