@@ -136,20 +136,32 @@ try {
             throw new DomainException("Stock insuficiente para '{$nombreProd}'. Disponible: {$stockActual} un. (solicitadas: {$totalUnidades} un.).");
         }
 
-        $precioUnitario = (float) $producto["precio"];
-        $subtotal = $precioUnitario * $totalUnidades;
+        // Respetar precio unitario personalizado / por mayor si fue enviado
+        $precioEnviado = isset($item["precio_unitario"]) ? (float)$item["precio_unitario"] : 0.0;
+        $esMayorista = !empty($item["es_mayorista"]);
+        $precioCatalogo = (float)($producto["precio"] ?? 0);
+
+        if ($precioEnviado > 0) {
+            $precioUnitario = round($precioEnviado, 2);
+        } else {
+            $precioUnitario = $precioCatalogo;
+        }
+
+        $subtotal = round($precioUnitario * $totalUnidades, 2);
         $descuentoMonto = round($subtotal * ($descPorc / 100), 2);
-        $totalItem = max(0, $subtotal - $descuentoMonto);
+        $totalItem = max(0, round($subtotal - $descuentoMonto, 2));
 
         $itemsValidados[] = [
             "producto_id" => $prodId,
             "producto_nombre" => (string)$producto["nombre"],
             "tipo_venta" => $tipoVenta,
+            "es_mayorista" => $esMayorista,
             "cantidad_empaque" => $cant,
             "unidades_por_bulto" => $unidadesPorEmpaque,
             "total_unidades" => $totalUnidades,
             "stock_actual" => $stockActual,
             "precio_unitario" => $precioUnitario,
+            "precio_catalogo" => $precioCatalogo,
             "subtotal" => $subtotal,
             "descuento_porcentaje" => $descPorc,
             "descuento_monto" => $descuentoMonto,
@@ -182,15 +194,18 @@ try {
         $totalDescuentoGeneral += $iv["descuento_monto"];
         $totalVentaGeneral += $iv["total"];
 
-        $nombresProductos[] = "{$iv['producto_nombre']} ({$totalUnidades} un.)";
+        $tagMayorista = $iv["es_mayorista"] ? " [MAYORISTA]" : "";
+        $nombresProductos[] = "{$iv['producto_nombre']} ({$totalUnidades} un.){$tagMayorista}";
 
         $itemsDetalleResumen[] = [
             "producto_id" => $prodId,
             "producto_nombre" => $iv["producto_nombre"],
             "tipo_venta" => $iv["tipo_venta"],
+            "es_mayorista" => $iv["es_mayorista"],
             "cantidad_empaque" => $iv["cantidad_empaque"],
             "cantidad" => $totalUnidades,
             "precio_unitario" => $iv["precio_unitario"],
+            "precio_catalogo" => $iv["precio_catalogo"],
             "subtotal" => $iv["subtotal"],
             "descuento_porcentaje" => $iv["descuento_porcentaje"],
             "descuento_monto" => $iv["descuento_monto"],
@@ -205,7 +220,7 @@ try {
         FirestoreConexion::registrarMovimientoProducto(
             productoId: $prodId,
             tipo: "VENTA",
-            descripcion: "Venta #{$ventaId} [{$ticketId}] a {$clienteNombre}{$infoContactoCliente} ({$totalUnidades} un. por $" . number_format($iv["total"], 2) . ")",
+            descripcion: "Venta #{$ventaId} [{$ticketId}] a {$clienteNombre}{$infoContactoCliente}{$tagMayorista} ({$totalUnidades} un. a $" . number_format($iv["precio_unitario"], 2) . " c/u - Total: $" . number_format($iv["total"], 2) . ")",
             cantidadAnterior: $iv["stock_actual"],
             cantidadNueva: $nuevoStock,
             diferencia: -$totalUnidades,
@@ -229,6 +244,7 @@ try {
         "producto_id" => $esVentaUnica ? $itemsValidados[0]["producto_id"] : null,
         "producto_nombre" => $productoNombreResumen,
         "tipo_venta" => $tipoVentaResumen,
+        "es_mayorista" => $esVentaUnica ? ($itemsValidados[0]["es_mayorista"] ?? false) : false,
         "cantidad_empaque" => $esVentaUnica ? $itemsValidados[0]["cantidad_empaque"] : $totalUnidadesGeneral,
         "cantidad" => $totalUnidadesGeneral,
         "precio_unitario" => $precioUnitarioResumen,

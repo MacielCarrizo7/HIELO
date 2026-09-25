@@ -264,11 +264,35 @@ $csrf = tokenCsrf();
                         </div>
                     </div>
 
-                    <!-- Controles de Cantidad y Descuento -->
+                    <!-- Controles de Venta por Mayor, Precio, Cantidad y Descuento -->
                     <div class="row g-3 align-items-center mb-3">
                         
+                        <!-- Toggle de Venta por Mayor -->
+                        <div class="col-12">
+                            <div class="p-2 px-3 bg-light border rounded-3 d-flex align-items-center justify-content-between">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input me-2" type="checkbox" role="switch" id="checkVentaMayoristaPOS">
+                                    <label class="form-check-label fw-bold text-dark small" for="checkVentaMayoristaPOS">
+                                        🚚 Venta por Mayor / Precio Negociado
+                                    </label>
+                                    <small class="text-muted d-block" style="font-size: 0.72rem;">Habilita este modo para ingresar manualmente un precio unitario especial.</small>
+                                </div>
+                                <span class="badge text-bg-danger fw-bold d-none" id="badgeMayoristaActivo">PRECIO MAYORISTA</span>
+                            </div>
+                        </div>
+
+                        <!-- Precio Unitario -->
+                        <div class="col-12 col-sm-4">
+                            <label class="form-label small fw-bold text-muted mb-1" id="lblTituloPrecioUnitario">Precio Unitario ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white fw-bold text-muted">$</span>
+                                <input type="number" step="0.01" min="0.01" class="form-control fw-bold font-monospace bg-light" id="inputPrecioUnitarioPOS" readonly>
+                            </div>
+                            <small class="text-muted d-block" id="lblInfoPrecioUnitario" style="font-size: 0.70rem;">Precio estándar de lista.</small>
+                        </div>
+
                         <!-- Cantidad -->
-                        <div class="col-12 col-sm-6">
+                        <div class="col-12 col-sm-4">
                             <label class="form-label small fw-bold text-muted mb-1">Cantidad de Bolsas</label>
                             <div class="input-group">
                                 <button type="button" class="btn btn-outline-secondary stepper-btn" id="btnRestarCantidad">-</button>
@@ -286,7 +310,7 @@ $csrf = tokenCsrf();
                         </div>
 
                         <!-- Descuento -->
-                        <div class="col-12 col-sm-6">
+                        <div class="col-12 col-sm-4">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label small fw-bold text-muted mb-0">Descuento (%)</label>
                                 <?php if (!$esAdmin): ?>
@@ -514,7 +538,25 @@ $csrf = tokenCsrf();
             document.getElementById("cfgProdCat").textContent = prod.categoria_nombre || "Bolsa de Hielo";
             document.getElementById("cfgProdNombre").textContent = prod.nombre;
             document.getElementById("cfgProdStock").textContent = `Stock disponible en cámara: ${prod.stock} bolsas`;
-            document.getElementById("cfgProdPrecioLista").textContent = formatoMoneda.format(prod.precio_venta || prod.precio || 0);
+            
+            const precioBase = Number(prod.precio_venta || prod.precio || 0);
+            document.getElementById("cfgProdPrecioLista").textContent = formatoMoneda.format(precioBase);
+
+            // Reiniciar modo mayorista y precio unitario
+            const checkMayorista = document.getElementById("checkVentaMayoristaPOS");
+            const inPrecio = document.getElementById("inputPrecioUnitarioPOS");
+            const badgeMayorista = document.getElementById("badgeMayoristaActivo");
+            const lblInfoPrecio = document.getElementById("lblInfoPrecioUnitario");
+
+            if (checkMayorista) checkMayorista.checked = false;
+            if (badgeMayorista) badgeMayorista.classList.add("d-none");
+            if (inPrecio) {
+                inPrecio.value = precioBase > 0 ? precioBase : "";
+                inPrecio.readOnly = true;
+                inPrecio.classList.remove("border-danger", "bg-white");
+                inPrecio.classList.add("bg-light");
+            }
+            if (lblInfoPrecio) lblInfoPrecio.textContent = "Precio estándar de lista.";
 
             // Reiniciar inputs de cantidad y descuento para el nuevo producto
             document.getElementById("inputCantidadPOS").value = "1";
@@ -524,6 +566,41 @@ $csrf = tokenCsrf();
             recalcularConfiguradorItem();
         }
 
+        // Switch Modo Venta por Mayor (Precio Editable)
+        const checkMayoristaEl = document.getElementById("checkVentaMayoristaPOS");
+        const inPrecioEl = document.getElementById("inputPrecioUnitarioPOS");
+        const badgeMayoristaEl = document.getElementById("badgeMayoristaActivo");
+        const lblInfoPrecioEl = document.getElementById("lblInfoPrecioUnitario");
+
+        if (checkMayoristaEl) {
+            checkMayoristaEl.addEventListener("change", () => {
+                if (!productoSeleccionado) return;
+                const precioBase = Number(productoSeleccionado.precio_venta || productoSeleccionado.precio || 0);
+
+                if (checkMayoristaEl.checked) {
+                    inPrecioEl.readOnly = false;
+                    inPrecioEl.classList.remove("bg-light");
+                    inPrecioEl.classList.add("border-danger", "bg-white");
+                    badgeMayoristaEl.classList.remove("d-none");
+                    lblInfoPrecioEl.innerHTML = '<strong class="text-danger">Modo mayorista activo: podés escribir el precio unitario acordado.</strong>';
+                    inPrecioEl.focus();
+                    inPrecioEl.select();
+                } else {
+                    inPrecioEl.value = precioBase > 0 ? precioBase : "";
+                    inPrecioEl.readOnly = true;
+                    inPrecioEl.classList.remove("border-danger", "bg-white");
+                    inPrecioEl.classList.add("bg-light");
+                    badgeMayoristaEl.classList.add("d-none");
+                    lblInfoPrecioEl.textContent = "Precio estándar de lista.";
+                }
+                recalcularConfiguradorItem();
+            });
+        }
+
+        if (inPrecioEl) {
+            inPrecioEl.addEventListener("input", recalcularConfiguradorItem);
+        }
+
         // 4. Recalcular precio del configurador en vivo
         function recalcularConfiguradorItem() {
             if (!productoSeleccionado) return;
@@ -531,6 +608,9 @@ $csrf = tokenCsrf();
             const inputCant = document.getElementById("inputCantidadPOS");
             const selectDesc = document.getElementById("selectDescuentoPOS");
             const customDesc = document.getElementById("inputDescuentoCustomPOS");
+            const inPrecio = document.getElementById("inputPrecioUnitarioPOS");
+            const checkMayorista = document.getElementById("checkVentaMayoristaPOS");
+            const esMayor = checkMayorista && checkMayorista.checked;
 
             let cant = Math.max(1, parseInt(inputCant.value) || 1);
             inputCant.value = cant;
@@ -539,11 +619,14 @@ $csrf = tokenCsrf();
             if (selectDesc.value === "custom") {
                 descPorc = Math.min(limiteDescuento, Math.max(0, parseFloat(customDesc.value) || 0));
             } else {
-                descPorc = parseFloat(selectDesc.value) || 0;
+                descPorc = Math.min(limiteDescuento, Math.max(0, parseFloat(selectDesc.value) || 0));
             }
 
-            const precioLista = Number(productoSeleccionado.precio_venta || productoSeleccionado.precio) || 0;
-            const precioConDesc = descPorc > 0 ? (precioLista * (1 - descPorc / 100)) : precioLista;
+            const precioCatalogo = Number(productoSeleccionado.precio_venta || productoSeleccionado.precio) || 0;
+            let precioUnitario = esMayor ? (parseFloat(inPrecio.value) || 0) : precioCatalogo;
+            if (precioUnitario < 0) precioUnitario = 0;
+
+            const precioConDesc = descPorc > 0 ? (precioUnitario * (1 - descPorc / 100)) : precioUnitario;
             const subtotal = cant * precioConDesc;
 
             document.getElementById("cfgItemUnitarioFinal").textContent = formatoMoneda.format(precioConDesc);
@@ -612,14 +695,32 @@ $csrf = tokenCsrf();
             const selectDesc = document.getElementById("selectDescuentoPOS");
             const customDesc = document.getElementById("inputDescuentoCustomPOS");
             let descPorc = selectDesc.value === "custom" ? (parseFloat(customDesc.value) || 0) : (parseFloat(selectDesc.value) || 0);
+            descPorc = Math.min(limiteDescuento, Math.max(0, descPorc));
 
-            const precioLista = Number(productoSeleccionado.precio_venta || productoSeleccionado.precio) || 0;
-            const subtotalBruto = cant * precioLista;
+            const checkMayorista = document.getElementById("checkVentaMayoristaPOS");
+            const inPrecio = document.getElementById("inputPrecioUnitarioPOS");
+            const esMayorista = checkMayorista && checkMayorista.checked;
+            const precioCatalogo = Number(productoSeleccionado.precio_venta || productoSeleccionado.precio) || 0;
+
+            let precioUnitarioFinal = esMayorista ? (parseFloat(inPrecio.value) || 0) : precioCatalogo;
+
+            if (precioUnitarioFinal <= 0) {
+                alert("Por favor ingresá un precio unitario válido mayor a $ 0.");
+                if (inPrecio) inPrecio.focus();
+                return;
+            }
+
+            const subtotalBruto = cant * precioUnitarioFinal;
             const descuentoMonto = subtotalBruto * (descPorc / 100);
             const totalItem = subtotalBruto - descuentoMonto;
 
-            // Si ya existe el mismo producto con el mismo descuento, sumarlo
-            const itemExistente = ticketItems.find(it => it.producto_id === productoSeleccionado.id && it.descuento_porcentaje === descPorc);
+            // Si ya existe el mismo producto con el mismo precio unitario y descuento, sumarlo
+            const itemExistente = ticketItems.find(it => 
+                it.producto_id === productoSeleccionado.id && 
+                Math.abs(it.precio_unitario - precioUnitarioFinal) < 0.001 && 
+                it.descuento_porcentaje === descPorc &&
+                it.es_mayorista === esMayorista
+            );
 
             if (itemExistente) {
                 itemExistente.cantidad += cant;
@@ -630,10 +731,12 @@ $csrf = tokenCsrf();
                 ticketItems.push({
                     producto_id: productoSeleccionado.id,
                     producto_nombre: productoSeleccionado.nombre,
-                    tipo_venta: "unidad",
+                    tipo_venta: esMayorista ? "bulto" : "unidad",
+                    es_mayorista: esMayorista,
                     cantidad_empaque: cant,
                     cantidad: cant,
-                    precio_unitario: precioLista,
+                    precio_unitario: precioUnitarioFinal,
+                    precio_catalogo: precioCatalogo,
                     descuento_porcentaje: descPorc,
                     descuento_monto: descuentoMonto,
                     subtotal: subtotalBruto,
@@ -692,11 +795,15 @@ $csrf = tokenCsrf();
                 const row = document.createElement("div");
                 row.className = "ticket-item-row";
 
-                const descBadge = it.descuento_porcentaje > 0 ? `<span class="badge text-bg-danger ms-1">-${it.descuento_porcentaje}%</span>` : "";
+                const mayorBadge = it.es_mayorista ? `<span class="badge text-bg-danger ms-1" style="font-size: 0.65rem;">MAYORISTA</span>` : "";
+                const descBadge = it.descuento_porcentaje > 0 ? `<span class="badge text-bg-warning text-dark ms-1">-${it.descuento_porcentaje}%</span>` : "";
 
                 row.innerHTML = `
                     <div style="max-width: 55%;">
-                        <strong class="text-dark small d-block text-truncate">${escapeHtml(it.producto_nombre)}</strong>
+                        <div class="d-flex align-items-center flex-wrap">
+                            <strong class="text-dark small text-truncate">${escapeHtml(it.producto_nombre)}</strong>
+                            ${mayorBadge}
+                        </div>
                         <small class="text-muted">${formatoMoneda.format(it.precio_unitario)} c/u ${descBadge}</small>
                     </div>
                     <div class="d-flex align-items-center gap-2">
