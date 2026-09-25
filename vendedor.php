@@ -1,6 +1,19 @@
 <?php
 require_once __DIR__ . "/seguridad.php";
 requerirPaginaAutenticada(["vendedor"]);
+require_once __DIR__ . "/FirestoreConexion.php";
+
+$usuarioId = (int)($_SESSION["usuario_id"] ?? 0);
+$limiteDesc = (float)($_SESSION['usuario_limite_descuento'] ?? 100.0);
+try {
+    $firestore = FirestoreConexion::obtenerFirestore();
+    $uDoc = $usuarioId > 0 ? $firestore->obtenerDocumento("usuarios", (string)$usuarioId) : null;
+    if ($uDoc && isset($uDoc["limite_descuento"])) {
+        $limiteDesc = (float)$uDoc["limite_descuento"];
+        $_SESSION["usuario_limite_descuento"] = $limiteDesc;
+    }
+} catch (Throwable $e) {}
+
 $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SESSION["usuario_apellido"] ?? ""));
 ?>
 <!DOCTYPE html>
@@ -16,7 +29,7 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body data-rol="vendedor" data-csrf="<?= htmlspecialchars(tokenCsrf(), ENT_QUOTES, "UTF-8") ?>" data-limite-descuento="<?= htmlspecialchars((string)($_SESSION['usuario_limite_descuento'] ?? 15), ENT_QUOTES, 'UTF-8') ?>">
+<body data-rol="vendedor" data-csrf="<?= htmlspecialchars(tokenCsrf(), ENT_QUOTES, "UTF-8") ?>" data-limite-descuento="<?= htmlspecialchars((string)$limiteDesc, ENT_QUOTES, 'UTF-8') ?>">
     <nav class="navbar navbar-expand-lg app-navbar sticky-top py-3">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="vendedor.php">

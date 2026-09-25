@@ -56,12 +56,24 @@ if (!is_array($items) || empty($items)) {
 
 // Límite de descuento para vendedores
 $rol = $_SESSION["usuario_rol"] ?? "";
-$limiteVendedor = ($rol === "admin") ? 100.0 : (isset($_SESSION["usuario_limite_descuento"]) ? (float)$_SESSION["usuario_limite_descuento"] : 15.0);
-
+$usuarioId = (int) ($_SESSION["usuario_id"] ?? 0);
 $tiposValidos = ["unidad", "caja", "bulto"];
 
 try {
     $firestore = FirestoreConexion::obtenerFirestore();
+
+    // Obtener límite de descuento en vivo desde Firestore
+    if ($rol === "admin") {
+        $limiteVendedor = 100.0;
+    } else {
+        $usuarioDoc = $usuarioId > 0 ? $firestore->obtenerDocumento("usuarios", (string)$usuarioId) : null;
+        if ($usuarioDoc && isset($usuarioDoc["limite_descuento"])) {
+            $limiteVendedor = (float)$usuarioDoc["limite_descuento"];
+            $_SESSION["usuario_limite_descuento"] = $limiteVendedor;
+        } else {
+            $limiteVendedor = isset($_SESSION["usuario_limite_descuento"]) ? (float)$_SESSION["usuario_limite_descuento"] : 100.0;
+        }
+    }
 
     // 1. Pre-validar stock y datos de cada producto en el carrito
     $itemsValidados = [];

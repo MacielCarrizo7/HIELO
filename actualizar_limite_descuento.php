@@ -27,6 +27,10 @@ try {
         "limite_descuento" => (float) $limite
     ]);
 
+    if ((int)($_SESSION["usuario_id"] ?? 0) === $usuarioId) {
+        $_SESSION["usuario_limite_descuento"] = (float) $limite;
+    }
+
     responderJson([
         "success" => true,
         "limite_descuento" => (float) $limite,

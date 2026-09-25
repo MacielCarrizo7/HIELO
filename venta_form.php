@@ -5,7 +5,26 @@ require_once __DIR__ . "/FirestoreConexion.php";
 
 $rol = $_SESSION["usuario_rol"] ?? "vendedor";
 $esAdmin = ($rol === "admin");
-$limiteDescuento = $esAdmin ? 100 : (int)($_SESSION["usuario_limite_descuento"] ?? 15);
+$usuarioId = (int)($_SESSION["usuario_id"] ?? 0);
+
+$limiteDescuento = 100.0;
+if (!$esAdmin) {
+    try {
+        $firestore = FirestoreConexion::obtenerFirestore();
+        $usuarioDoc = $usuarioId > 0 ? $firestore->obtenerDocumento("usuarios", (string)$usuarioId) : null;
+        if ($usuarioDoc && isset($usuarioDoc["limite_descuento"])) {
+            $limiteDescuento = (float)$usuarioDoc["limite_descuento"];
+            $_SESSION["usuario_limite_descuento"] = $limiteDescuento;
+        } else {
+            $limiteDescuento = isset($_SESSION["usuario_limite_descuento"]) ? (float)$_SESSION["usuario_limite_descuento"] : 100.0;
+        }
+    } catch (Throwable $e) {
+        $limiteDescuento = isset($_SESSION["usuario_limite_descuento"]) ? (float)$_SESSION["usuario_limite_descuento"] : 100.0;
+    }
+} else {
+    $_SESSION["usuario_limite_descuento"] = 100.0;
+}
+
 $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Usuario") . " " . ($_SESSION["usuario_apellido"] ?? ""));
 $paginaRetorno = $esAdmin ? "admin.php" : "vendedor.php";
 $csrf = tokenCsrf();
@@ -268,20 +287,31 @@ $csrf = tokenCsrf();
 
                         <!-- Descuento -->
                         <div class="col-12 col-sm-6">
-                            <label class="form-label small fw-bold text-muted mb-1">Descuento (%)</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-bold text-muted mb-0">Descuento (%)</label>
+                                <?php if (!$esAdmin): ?>
+                                    <span class="badge text-bg-warning text-dark font-monospace" style="font-size: 0.72rem;">Máx. <?= (float)$limiteDescuento ?>%</span>
+                                <?php endif; ?>
+                            </div>
                             <select class="form-select form-select-lg fw-bold" id="selectDescuentoPOS">
                                 <option value="0" selected>Sin descuento (0%)</option>
-                                <option value="5">5% de descuento</option>
-                                <option value="10">10% de descuento</option>
-                                <option value="15">15% de descuento</option>
-                                <?php if ($esAdmin): ?>
-                                    <option value="20">20% de descuento</option>
-                                    <option value="25">25% de descuento</option>
-                                    <option value="30">30% de descuento</option>
-                                    <option value="custom">Personalizado...</option>
+                                <?php
+                                $pasosDescuento = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
+                                $mostrados = [0];
+                                foreach ($pasosDescuento as $paso) {
+                                    if ($paso <= $limiteDescuento) {
+                                        echo "<option value=\"{$paso}\">{$paso}% de descuento</option>\n";
+                                        $mostrados[] = $paso;
+                                    }
+                                }
+                                if ($limiteDescuento > 0 && !in_array((int)$limiteDescuento, $mostrados, true)) {
+                                    echo "<option value=\"{$limiteDescuento}\">{$limiteDescuento}% de descuento (Límite)</option>\n";
+                                }
+                                if ($limiteDescuento > 0): ?>
+                                    <option value="custom">Personalizado (hasta <?= (float)$limiteDescuento ?>%)...</option>
                                 <?php endif; ?>
                             </select>
-                            <input type="number" min="0" max="<?= $limiteDescuento ?>" class="form-control mt-1 d-none font-monospace fw-bold" id="inputDescuentoCustomPOS" placeholder="Porcentaje personalizado (máx <?= $limiteDescuento ?>%)">
+                            <input type="number" min="0" max="<?= $limiteDescuento ?>" step="0.5" class="form-control mt-1 d-none font-monospace fw-bold" id="inputDescuentoCustomPOS" placeholder="Porcentaje personalizado (máx <?= (float)$limiteDescuento ?>%)">
                         </div>
 
                     </div>
@@ -389,7 +419,7 @@ $csrf = tokenCsrf();
         const formatoMoneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
         const csrfToken = document.body.dataset.csrf;
         const rolUsuario = document.body.dataset.rol;
-        const limiteDescuento = Number(document.body.dataset.limiteDescuento) || 15;
+        const limiteDescuento = isNaN(Number(document.body.dataset.limiteDescuento)) ? 100 : Number(document.body.dataset.limiteDescuento);
 
         let productosPOS = [];
         let productoSeleccionado = null;
