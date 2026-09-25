@@ -31,15 +31,9 @@ try {
 
     if (($venta["estado"] ?? "") === "CANCELADA") {
         if ($accion === "cancelar") {
-            responderJson(["success" => true, "already_cancelled" => true]);
+            responderJson(["success" => true, "already_cancelled" => true, "estado" => "CANCELADA"]);
         }
         responderJson(["error" => "Una venta cancelada no puede modificarse."], 409);
-    }
-
-    $productoId = (int) ($venta["producto_id"] ?? 0);
-    $producto = $firestore->obtenerDocumento("productos", (string)$productoId);
-    if (!$producto) {
-        throw new RuntimeException("El producto asociado ya no existe.");
     }
 
     $estadoAnterior = (string) ($venta["estado"] ?? "ACTIVA");
@@ -49,11 +43,63 @@ try {
     $fechaActual = date("Y-m-d H:i:s");
 
     if ($accion === "cancelar") {
-        // Reintegrar stock al producto
-        $stockActual = (int) ($producto["stock"] ?? 0);
-        $firestore->actualizarCampos("productos", (string)$productoId, [
-            "stock" => $stockActual + $cantidadAnterior
-        ]);
+        // Reintegrar stock al o los productos de la venta (si existen en inventario)
+        $items = !empty($venta["items"]) && is_array($venta["items"]) ? $venta["items"] : [];
+
+        if (!empty($items)) {
+            // Venta con múltiples items
+            foreach ($items as $item) {
+                $itemProdId = (int) ($item["producto_id"] ?? $item["id"] ?? 0);
+                $itemCant = (int) ($item["cantidad"] ?? 0);
+                if ($itemProdId <= 0 || $itemCant <= 0) {
+                    continue;
+                }
+
+                $producto = $firestore->obtenerDocumento("productos", (string)$itemProdId);
+                if ($producto) {
+                    $stockActual = (int) ($producto["stock"] ?? 0);
+                    $firestore->actualizarCampos("productos", (string)$itemProdId, [
+                        "stock" => $stockActual + $itemCant
+                    ]);
+
+                    FirestoreConexion::registrarMovimientoProducto(
+                        productoId: $itemProdId,
+                        tipo: "VENTA_CANCELADA",
+                        descripcion: "Venta #{$ventaId} cancelada. Reintegro de {$itemCant} un. al stock" . ($motivo !== "" ? " (Motivo: {$motivo})" : ""),
+                        cantidadAnterior: $stockActual,
+                        cantidadNueva: $stockActual + $itemCant,
+                        diferencia: +$itemCant,
+                        precioAnterior: (float) ($item["precio_unitario"] ?? 0),
+                        precioNuevo: (float) ($item["precio_unitario"] ?? 0),
+                        usuarioId: $usuarioId
+                    );
+                }
+            }
+        } else {
+            // Venta de formato simple (un solo producto)
+            $productoId = (int) ($venta["producto_id"] ?? 0);
+            if ($productoId > 0) {
+                $producto = $firestore->obtenerDocumento("productos", (string)$productoId);
+                if ($producto) {
+                    $stockActual = (int) ($producto["stock"] ?? 0);
+                    $firestore->actualizarCampos("productos", (string)$productoId, [
+                        "stock" => $stockActual + $cantidadAnterior
+                    ]);
+
+                    FirestoreConexion::registrarMovimientoProducto(
+                        productoId: $productoId,
+                        tipo: "VENTA_CANCELADA",
+                        descripcion: "Venta #{$ventaId} cancelada. Reintegro de {$cantidadAnterior} un. al stock" . ($motivo !== "" ? " (Motivo: {$motivo})" : ""),
+                        cantidadAnterior: $stockActual,
+                        cantidadNueva: $stockActual + $cantidadAnterior,
+                        diferencia: +$cantidadAnterior,
+                        precioAnterior: (float) ($venta["precio_unitario"] ?? 0),
+                        precioNuevo: (float) ($venta["precio_unitario"] ?? 0),
+                        usuarioId: $usuarioId
+                    );
+                }
+            }
+        }
 
         // Actualizar estado de la venta
         $firestore->actualizarCampos("ventas", (string)$ventaId, [
@@ -62,11 +108,26 @@ try {
             "motivo_cancelacion" => $motivo !== "" ? $motivo : null
         ]);
 
+        // Actualizar detalle_ventas si existe
+        try {
+            $detalle = $firestore->obtenerDocumento("detalle_ventas", (string)$ventaId);
+            if ($detalle) {
+                $firestore->actualizarCampos("detalle_ventas", (string)$ventaId, [
+                    "estado" => "CANCELADA",
+                    "fecha_modificacion" => $fechaActual,
+                    "motivo_cancelacion" => $motivo !== "" ? $motivo : null
+                ]);
+            }
+        } catch (Throwable $eDet) {
+            // Silencioso
+        }
+
         // Registrar en historial
         $histId = FirestoreConexion::obtenerSiguienteIdHistorial();
         $historialDoc = [
             "id" => $histId,
             "venta_id" => $ventaId,
+            "ticket_id" => $venta["ticket_id"] ?? null,
             "usuario_id" => $usuarioId,
             "tipo" => $prefijoActor . "_CANCELA",
             "cantidad_anterior" => $cantidadAnterior,
@@ -80,23 +141,16 @@ try {
         ];
         $firestore->guardarDocumento("venta_historial", (string)$histId, $historialDoc);
 
-        // Registrar en movimientos de producto
-        FirestoreConexion::registrarMovimientoProducto(
-            productoId: $productoId,
-            tipo: "VENTA_CANCELADA",
-            descripcion: "Venta #{$ventaId} cancelada. Reintegro de {$cantidadAnterior} un. al stock" . ($motivo !== "" ? " (Motivo: {$motivo})" : ""),
-            cantidadAnterior: $stockActual,
-            cantidadNueva: $stockActual + $cantidadAnterior,
-            diferencia: +$cantidadAnterior,
-            precioAnterior: (float) ($venta["precio_unitario"] ?? 0),
-            precioNuevo: (float) ($venta["precio_unitario"] ?? 0),
-            usuarioId: $usuarioId
-        );
-
-        responderJson(["success" => true, "estado" => "CANCELADA"]);
+        responderJson(["success" => true, "estado" => "CANCELADA", "mensaje" => "Venta cancelada correctamente."]);
     }
 
-    // Modificar cantidad
+    // Modificar cantidad (requiere que el producto exista para calcular stock y totales)
+    $productoId = (int) ($venta["producto_id"] ?? 0);
+    $producto = $productoId > 0 ? $firestore->obtenerDocumento("productos", (string)$productoId) : null;
+    if (!$producto) {
+        responderJson(["error" => "No se puede modificar la cantidad porque el producto asociado ya no existe en el inventario."], 400);
+    }
+
     $cantidadNueva = filter_input(INPUT_POST, "cantidad", FILTER_VALIDATE_INT) ?: 0;
     if ($cantidadNueva <= 0) {
         responderJson(["error" => "La nueva cantidad debe ser mayor que cero."], 400);
@@ -129,16 +183,21 @@ try {
     ]);
 
     // Actualizar detalle_ventas
-    $firestore->actualizarCampos("detalle_ventas", (string)$ventaId, [
-        "cantidad" => $cantidadNueva,
-        "total" => $totalNuevo
-    ]);
+    try {
+        $firestore->actualizarCampos("detalle_ventas", (string)$ventaId, [
+            "cantidad" => $cantidadNueva,
+            "total" => $totalNuevo
+        ]);
+    } catch (Throwable $eDet) {
+        // Silencioso
+    }
 
     // Registrar en historial
     $histId = FirestoreConexion::obtenerSiguienteIdHistorial();
     $historialDoc = [
         "id" => $histId,
         "venta_id" => $ventaId,
+        "ticket_id" => $venta["ticket_id"] ?? null,
         "usuario_id" => $usuarioId,
         "tipo" => $prefijoActor . "_MODIFICA_CANTIDAD",
         "cantidad_anterior" => $cantidadAnterior,
