@@ -271,9 +271,10 @@ function filtrarYRenderizarProductos() {
 
 async function cargarProductos() {
     const tbody = document.getElementById("productosBody");
-    if (!tbody) return;
     const columnas = 6;
-    mensajeEnTabla(tbody, columnas, "Cargando presentaciones de hielo...");
+    if (tbody) {
+        mensajeEnTabla(tbody, columnas, "Cargando presentaciones de hielo...");
+    }
     try {
         productosCache = await solicitar("obtener_productos.php");
         
@@ -282,11 +283,77 @@ async function cargarProductos() {
         if (resProd) resProd.textContent = productosCache.length;
         if (resStock) resStock.textContent = productosCache.reduce((total, p) => total + Number(p.stock), 0);
         
+        // Desglose de stock específico para bolsas de 3 kg y 1.5 kg
+        let stock3kg = 0;
+        let stock15kg = 0;
+        productosCache.forEach((p) => {
+            const nombre = (p.nombre || "").toLowerCase();
+            const st = Number(p.stock) || 0;
+            if (nombre.includes("3") && (nombre.includes("kg") || nombre.includes("kilo") || nombre.includes("3kg"))) {
+                stock3kg += st;
+            } else if ((nombre.includes("1.5") || nombre.includes("1,5")) && (nombre.includes("kg") || nombre.includes("kilo") || nombre.includes("1.5kg") || nombre.includes("1,5kg"))) {
+                stock15kg += st;
+            } else if (nombre.includes("3")) {
+                stock3kg += st;
+            } else if (nombre.includes("1.5") || nombre.includes("1,5")) {
+                stock15kg += st;
+            }
+        });
+
+        const elStock3kg = document.getElementById("stockBolsa3kg");
+        const elStock15kg = document.getElementById("stockBolsa15kg");
+        if (elStock3kg) elStock3kg.textContent = `${stock3kg} un.`;
+        if (elStock15kg) elStock15kg.textContent = `${stock15kg} un.`;
+
+        // Renderizado de tarjetas de disponibilidad en tiempo real (Inicio Vendedor)
+        const contenedorStockDetalle = document.getElementById("contenedorStockPorProducto");
+        if (contenedorStockDetalle) {
+            if (!productosCache || productosCache.length === 0) {
+                contenedorStockDetalle.innerHTML = `<div class="col-12 text-muted text-center py-3">No hay presentaciones registradas en el inventario.</div>`;
+            } else {
+                contenedorStockDetalle.innerHTML = productosCache.map((p) => {
+                    const stockNum = Number(p.stock) || 0;
+                    const badgeClass = stockNum > 20 ? "text-bg-success" : (stockNum > 0 ? "text-bg-warning" : "text-bg-danger");
+                    const estadoTexto = stockNum > 20 ? "Disponible" : (stockNum > 0 ? "Stock Bajo" : "Agotado");
+                    const pesoIcono = (p.nombre || "").toLowerCase().includes("3") ? "🧊" : "❄️";
+                    const presTexto = p.presentacion === "caja" ? "Caja" : (p.presentacion === "bulto" ? "Bulto" : "Bolsa individual");
+                    
+                    return `
+                        <div class="col-12 col-md-6">
+                            <div class="card border-0 shadow-sm rounded-3 p-3 h-100 bg-white" style="border-left: 5px solid ${stockNum > 0 ? '#0284c7' : '#ef4444'} !important;">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fs-2">${pesoIcono}</span>
+                                        <div>
+                                            <h3 class="h6 fw-bold mb-0 text-dark">${p.nombre}</h3>
+                                            <small class="text-muted">${presTexto} • ${formatoMoneda.format(p.precio || 0)}</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge ${badgeClass} fw-bold px-2 py-1">${estadoTexto}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-end mt-2 pt-2 border-top">
+                                    <div>
+                                        <small class="text-muted d-block fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.04em;">STOCK EN CÁMARA</small>
+                                        <span class="fs-4 fw-bold ${stockNum > 0 ? 'text-primary' : 'text-danger'}">${stockNum} <small class="fs-6 text-muted">unidades</small></span>
+                                    </div>
+                                    <a href="venta_form.php" class="btn btn-sm btn-outline-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                                        <i class="bi bi-cart-plus"></i> Vender
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+            }
+        }
+
         filtrarYRenderizarProductos();
         llenarSelectoresProductos();
         llenarSelectorBarcodeProductos();
     } catch (error) {
-        mensajeEnTabla(tbody, columnas, error.message, true);
+        if (tbody) {
+            mensajeEnTabla(tbody, columnas, error.message, true);
+        }
     }
 }
 

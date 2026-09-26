@@ -100,26 +100,56 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
             
             <!-- Pestaña 1: Resumen -->
             <div class="tab-pane fade show active" id="pestana-resumen" role="tabpanel" aria-labelledby="tab-vendedor-resumen-btn">
+                
+                <!-- Tarjetas de Stock Específico y Métricas Principales -->
                 <div class="row g-3 mb-4">
-                    <div class="col-12 col-sm-4">
-                        <div class="stat-card">
-                            <span class="texto-secundario small fw-semibold">Presentaciones de Hielo</span>
-                            <div id="resumenProductos" class="stat-valor">—</div>
-                            <small class="text-muted">Tipos disponibles</small>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="stat-card border-start border-primary border-4">
+                            <span class="texto-secundario small fw-semibold">Bolsas de 3 kg en Cámara</span>
+                            <div id="stockBolsa3kg" class="stat-valor text-primary">—</div>
+                            <small class="text-muted">Stock actual disponible</small>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-4">
-                        <div class="stat-card">
-                            <span class="texto-secundario small fw-semibold">Bolsas en Cámara</span>
-                            <div id="resumenStock" class="stat-valor">—</div>
-                            <small class="text-muted">Stock físico disponible</small>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="stat-card border-start border-info border-4">
+                            <span class="texto-secundario small fw-semibold">Bolsas de 1.5 kg en Cámara</span>
+                            <div id="stockBolsa15kg" class="stat-valor text-info">—</div>
+                            <small class="text-muted">Stock actual disponible</small>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-4">
-                        <div class="stat-card">
-                            <span class="texto-secundario small fw-semibold">Ventas realizadas</span>
-                            <div id="resumenVentas" class="stat-valor">—</div>
-                            <small class="text-muted">Total operaciones</small>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="stat-card border-start border-success border-4">
+                            <span class="texto-secundario small fw-semibold">Total Bolsas en Cámara</span>
+                            <div id="resumenStock" class="stat-valor text-success">—</div>
+                            <small class="text-muted">Stock global físico</small>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="stat-card border-start border-warning border-4">
+                            <span class="texto-secundario small fw-semibold">Ventas Realizadas</span>
+                            <div id="resumenVentas" class="stat-valor text-warning">—</div>
+                            <small class="text-muted">Operaciones del turno</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección: Disponibilidad de Hielo en Cámara en Tiempo Real -->
+                <div class="seccion-card mb-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 pb-2 border-bottom">
+                        <div>
+                            <h2 class="h5 fw-bold mb-0 text-dark">
+                                <span class="me-2">🧊</span>Disponibilidad de Hielo en Cámara de Frío
+                            </h2>
+                            <small class="text-muted">Stock en tiempo real listo para venta y despacho</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="cargarProductos()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar Stock
+                        </button>
+                    </div>
+                    <div class="row g-3" id="contenedorStockPorProducto">
+                        <div class="col-12 text-center py-3 text-muted">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            Cargando stock de presentaciones...
                         </div>
                     </div>
                 </div>

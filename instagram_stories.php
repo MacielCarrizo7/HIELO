@@ -227,42 +227,34 @@ try {
         .story-pricing-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-            border-bottom: 1px solid #1e293b;
-        }
-
-        .story-pricing-title {
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #7dd3fc;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            padding-bottom: 5px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            width: 100%;
         }
 
         /* Etiqueta VENTA POR MAYOR / Badge Destacado en Header */
         .badge-mayorista-pill {
-            background: #dc2626;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
             color: #ffffff;
             font-family: var(--story-font-heading);
-            font-size: 0.65rem;
+            font-size: 0.72rem;
             font-weight: 900;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            padding: 3px 10px;
+            padding: 5px 14px;
             border-radius: 50px;
             border: 1px solid #ef4444;
-            box-shadow: none;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
+            gap: 6px;
             line-height: 1.2;
+            width: 100%;
+            text-align: center;
         }
 
         .story-items-list {
@@ -555,9 +547,6 @@ try {
                                     <!-- Recuadro Moderno de Precios Reales (Firestore) -->
                                     <div class="story-pricing-box" style="position: relative; z-index: 3;">
                                         <div class="story-pricing-header">
-                                            <span class="story-pricing-title">
-                                                <i class="bi bi-tag-fill"></i> Precios Actualizados
-                                            </span>
                                             <span class="badge-mayorista-pill" id="storyPreviewBadgeMayorista">
                                                 🚚 VENTA POR MAYOR
                                             </span>
