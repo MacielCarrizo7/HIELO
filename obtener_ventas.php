@@ -56,12 +56,13 @@ try {
         $est = (string) ($v["estado"] ?? "ACTIVA");
         $fecha = (string) ($v["fecha"] ?? "");
         $ticketId = (string) ($v["ticket_id"] ?? "");
+        $observaciones = trim((string)($v["observaciones"] ?? ($v["detalle"] ?? "")));
 
         // 1. CONTROL DE ACCESO POR ROL:
         // Si el usuario logueado es "vendedor", únicamente puede ver sus propias ventas
         if ($rolSesion === "vendedor") {
             $esPropia = false;
-            if ($usuarioIdSesion > 0 && $usuId === $usuarioIdSesion) {
+            if ($usuarioIdSesion > 0 && ($usuId === $usuarioIdSesion || (int)($v["vendedor_id"] ?? 0) === $usuarioIdSesion)) {
                 $esPropia = true;
             } elseif ($usuarioNombreSesion !== "" && mb_strtolower(trim($vendedorNombreDoc)) === mb_strtolower($usuarioNombreSesion)) {
                 $esPropia = true;
@@ -97,8 +98,11 @@ try {
         }
 
         // Filtro por vendedor (aplicable al rol admin)
-        if ($rolSesion === "admin" && $vendIdFiltro !== null && $usuId !== $vendIdFiltro) {
-            continue;
+        if ($rolSesion === "admin" && $vendIdFiltro !== null) {
+            $vendedorVentaId = (int)($v["vendedor_id"] ?? ($v["usuario_id"] ?? $usuId));
+            if ($vendedorVentaId !== $vendIdFiltro && $usuId !== $vendIdFiltro) {
+                continue;
+            }
         }
 
         // Filtro por estado
@@ -126,11 +130,14 @@ try {
             "total" => (float) ($v["total"] ?? 0),
             "fecha" => $fecha,
             "estado" => $est,
+            "observaciones" => $observaciones,
+            "detalle" => $observaciones,
             "fecha_entrega" => !empty($v["fecha_entrega"]) ? (string)$v["fecha_entrega"] : null,
             "fecha_modificacion" => !empty($v["fecha_modificacion"]) ? (string)$v["fecha_modificacion"] : null,
             "motivo_cancelacion" => !empty($v["motivo_cancelacion"]) ? (string)$v["motivo_cancelacion"] : null,
             "cliente_id" => $cliId,
             "usuario_id" => $usuId,
+            "vendedor_id" => (int)($v["vendedor_id"] ?? $usuId),
             "cliente" => !empty($v["cliente_nombre"]) ? (string)$v["cliente_nombre"] : ($mapaUsuarios[$cliId] ?? "Consumidor Final"),
             "cliente_telefono" => (string)($v["cliente_telefono"] ?? ""),
             "cliente_direccion" => (string)($v["cliente_direccion"] ?? ""),

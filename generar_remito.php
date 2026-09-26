@@ -87,6 +87,7 @@ try {
     $fechaVenta = (string)($primerItem["fecha"] ?? date("Y-m-d H:i:s"));
     $fechaEntrega = $primerItem["fecha_entrega"] ?? null;
     $estadoVenta = (string)($primerItem["estado"] ?? "ACTIVA");
+    $observacionesVenta = trim((string)($primerItem["observaciones"] ?? ($primerItem["detalle"] ?? "")));
     if ($ticketCod === "") {
         $ticketCod = (string)($primerItem["ticket_id"] ?? "TK-" . str_pad((string)$idPrincipal, 6, "0", STR_PAD_LEFT));
     }
@@ -535,7 +536,13 @@ $esEntregado = ($estadoVenta === "ENTREGADO");
             <!-- Resumen Financiero y Totales -->
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    <div class="p-3 bg-light rounded border h-100 small text-muted">
+                    <?php if ($observacionesVenta !== ""): ?>
+                    <div class="p-3 bg-light rounded border mb-2 small">
+                        <strong class="text-primary d-block mb-1"><i class="bi bi-chat-left-text me-1"></i> Observaciones / Detalle de Reparto:</strong>
+                        <div class="text-dark fw-semibold"><?= nl2br(htmlspecialchars($observacionesVenta, ENT_QUOTES, 'UTF-8')) ?></div>
+                    </div>
+                    <?php endif; ?>
+                    <div class="p-3 bg-light rounded border small text-muted">
                         <h6 class="fw-bold text-dark mb-2">Condiciones de Entrega y Recepción</h6>
                         <ul class="ps-3 mb-0">
                             <li>Mercadería sujeta a control de bultos y temperatura en el acto de descarga.</li>

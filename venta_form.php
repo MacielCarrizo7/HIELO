@@ -397,11 +397,19 @@ $csrf = tokenCsrf();
                     </div>
 
                     <!-- Lista de Ítems del Ticket -->
-                    <div id="cajaItemsTicket" class="mb-3" style="max-height: 280px; overflow-y: auto;">
+                    <div id="cajaItemsTicket" class="mb-3" style="max-height: 240px; overflow-y: auto;">
                         <div class="text-center text-muted py-4 bg-light rounded-3" id="ticketVacioMsg">
                             <i class="bi bi-cart-x fs-2 d-block text-muted mb-1"></i>
                             El ticket está vacío.<br>Toca un producto de hielo a la izquierda para cargarlo.
                         </div>
+                    </div>
+
+                    <!-- Detalle / Observaciones de Venta y Entrega -->
+                    <div class="mb-3">
+                        <label for="posObservaciones" class="form-label small fw-bold text-muted mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-card-text text-primary"></i> <span>Detalle / Observaciones (Reparto, Pago, etc.)</span>
+                        </label>
+                        <textarea class="form-control form-control-sm" id="posObservaciones" rows="2" placeholder="Ej: Pago con transferencia, entregar en freezer 2, remito firmado..."></textarea>
                     </div>
 
                     <!-- Total a Cobrar -->
@@ -869,11 +877,14 @@ $csrf = tokenCsrf();
                 const clienteNombre = document.getElementById("posClienteNombre").value.trim() || "Consumidor Final";
                 const clienteTelefono = document.getElementById("posClienteTelefono").value.trim();
                 const clienteDireccion = document.getElementById("posClienteDireccion").value.trim();
+                const observaciones = document.getElementById("posObservaciones").value.trim();
 
                 const payload = {
                     cliente_nombre: clienteNombre,
                     cliente_telefono: clienteTelefono,
                     cliente_direccion: clienteDireccion,
+                    observaciones: observaciones,
+                    detalle: observaciones,
                     items: ticketItems
                 };
 
@@ -902,8 +913,9 @@ $csrf = tokenCsrf();
                 `;
                 alertOk.classList.remove("d-none");
 
-                // Limpiar Ticket y recargar stock
+                // Limpiar Ticket y campo de observaciones
                 ticketItems = [];
+                document.getElementById("posObservaciones").value = "";
                 renderizarTicket();
                 await cargarProductosPOS();
 

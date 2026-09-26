@@ -277,11 +277,11 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
 
                     <!-- Filtros de Ventas -->
                     <form id="formFiltrosVentas" class="row g-3 align-items-end mb-4 p-3 bg-light rounded border">
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label for="filtroDesde" class="form-label">Desde</label>
                             <input type="date" id="filtroDesde" name="desde" class="form-control">
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label for="filtroHasta" class="form-label">Hasta</label>
                             <input type="date" id="filtroHasta" name="hasta" class="form-control">
                         </div>
@@ -292,6 +292,12 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                             </select>
                         </div>
                         <div class="col-12 col-sm-6 col-lg-3">
+                            <label for="filtroVendedor" class="form-label fw-bold text-primary">Filtrar por Vendedor</label>
+                            <select id="filtroVendedor" name="vendedor_id" class="form-select">
+                                <option value="">Todos los vendedores</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-2">
                             <label for="filtroEstado" class="form-label">Estado</label>
                             <select id="filtroEstado" name="estado" class="form-select">
                                 <option value="">Todos los estados</option>

@@ -1646,10 +1646,34 @@ async function cargarVentas(filtros = {}) {
         tbody.replaceChildren();
         ventas.forEach((venta) => {
             const fila = document.createElement("tr");
-            fila.append(celda(String(venta.id)));
-            fila.append(celda(fechaLegible(venta.fecha)));
-            fila.append(celda(venta.cliente || "—"));
-            fila.append(celda(venta.producto_nombre || "—"));
+            fila.append(celda(String(venta.id), "font-monospace small text-muted"));
+            fila.append(celda(fechaLegible(venta.fecha), "small text-nowrap"));
+
+            // Cliente y Observaciones
+            const clienteTd = document.createElement("td");
+            const clienteNom = document.createElement("strong");
+            clienteNom.textContent = venta.cliente || "Consumidor Final";
+            clienteNom.className = "text-dark d-block";
+            clienteTd.appendChild(clienteNom);
+
+            if (venta.cliente_telefono || venta.cliente_direccion) {
+                const cliInfo = document.createElement("small");
+                cliInfo.className = "text-muted d-block";
+                cliInfo.style.fontSize = "0.75rem";
+                cliInfo.textContent = [venta.cliente_telefono, venta.cliente_direccion].filter(Boolean).join(" • ");
+                clienteTd.appendChild(cliInfo);
+            }
+
+            if (venta.observaciones || venta.detalle) {
+                const obsDiv = document.createElement("div");
+                obsDiv.className = "mt-1 p-1 px-2 bg-primary bg-opacity-10 border border-primary-subtle rounded small text-primary";
+                obsDiv.style.fontSize = "0.74rem";
+                obsDiv.innerHTML = `<i class="bi bi-chat-left-text me-1"></i> <span class="fw-semibold">${escapeHtml(venta.observaciones || venta.detalle)}</span>`;
+                clienteTd.appendChild(obsDiv);
+            }
+            fila.appendChild(clienteTd);
+
+            fila.append(celda(venta.producto_nombre || "—", "fw-medium"));
 
             const empaqueTexto = (venta.tipo_venta && venta.tipo_venta !== "unidad") 
                 ? `${venta.cantidad_empaque || venta.cantidad} ${venta.tipo_venta}(s) (${venta.cantidad} un.)` 
@@ -3069,18 +3093,92 @@ if (formFiltrosBajas) {
     });
 }
 
+// -------------------------------------------------------------
+// SCROLLBAR FLOTANTE ACCESIBLE PARA HISTORIALES Y TABLAS LARGAS
+// -------------------------------------------------------------
+function inicializarScrollbarsFlotantes() {
+    document.querySelectorAll(".table-responsive").forEach((wrapper) => {
+        if (wrapper.dataset.floatingScrollInit === "true") return;
+        wrapper.dataset.floatingScrollInit = "true";
+
+        const floatBar = document.createElement("div");
+        floatBar.className = "floating-horizontal-scrollbar no-print";
+        const floatContent = document.createElement("div");
+        floatContent.className = "floating-horizontal-scrollbar-content";
+        floatBar.appendChild(floatContent);
+        document.body.appendChild(floatBar);
+
+        function actualizarDimensiones() {
+            const table = wrapper.querySelector("table");
+            if (!table) return;
+            const scrollWidth = table.scrollWidth;
+            const clientWidth = wrapper.clientWidth;
+
+            floatContent.style.width = `${scrollWidth}px`;
+
+            const rect = wrapper.getBoundingClientRect();
+            const esVisible = rect.top < window.innerHeight && rect.bottom > 80;
+            const tieneOverflow = scrollWidth > (clientWidth + 4);
+
+            // Mostrar el scrollbar flotante si la tabla desborda y su parte inferior queda fuera de la vista
+            if (tieneOverflow && esVisible && rect.bottom > window.innerHeight) {
+                floatBar.style.display = "block";
+                floatBar.style.left = `${rect.left}px`;
+                floatBar.style.width = `${clientWidth}px`;
+                floatBar.scrollLeft = wrapper.scrollLeft;
+            } else {
+                floatBar.style.display = "none";
+            }
+        }
+
+        let isSyncingFloat = false;
+        let isSyncingWrapper = false;
+
+        wrapper.addEventListener("scroll", () => {
+            if (!isSyncingFloat) {
+                isSyncingWrapper = true;
+                floatBar.scrollLeft = wrapper.scrollLeft;
+                isSyncingWrapper = false;
+            }
+        }, { passive: true });
+
+        floatBar.addEventListener("scroll", () => {
+            if (!isSyncingWrapper) {
+                isSyncingFloat = true;
+                wrapper.scrollLeft = floatBar.scrollLeft;
+                isSyncingFloat = false;
+            }
+        }, { passive: true });
+
+        window.addEventListener("scroll", actualizarDimensiones, { passive: true });
+        window.addEventListener("resize", actualizarDimensiones, { passive: true });
+        if (typeof ResizeObserver !== "undefined") {
+            new ResizeObserver(actualizarDimensiones).observe(wrapper);
+        }
+        actualizarDimensiones();
+    });
+}
+
 // Inicialización general al cargar el DOM
 document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll('[data-bs-target="#pestana-barcodes"]').forEach((btn) => {
         btn.addEventListener("shown.bs.tab", () => {
             actualizarPreviewBarcode();
             cargarHistorialCodigos();
+            setTimeout(inicializarScrollbarsFlotantes, 200);
         });
     });
 
     document.querySelectorAll('[data-bs-target="#pestana-bajas"]').forEach((btn) => {
         btn.addEventListener("shown.bs.tab", () => {
             cargarBajas();
+            setTimeout(inicializarScrollbarsFlotantes, 200);
+        });
+    });
+
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach((btn) => {
+        btn.addEventListener("shown.bs.tab", () => {
+            setTimeout(inicializarScrollbarsFlotantes, 200);
         });
     });
 
@@ -3095,4 +3193,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         cargarHistorialCodigos()
     ]);
     actualizarPreviewBarcode();
+    inicializarScrollbarsFlotantes();
 });

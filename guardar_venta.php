@@ -13,6 +13,7 @@ if (!is_array($datosJson)) {
     $clienteTelefono = trim($_POST["cliente_telefono"] ?? "");
     $clienteDireccion = trim($_POST["cliente_direccion"] ?? "");
     $clienteId = filter_input(INPUT_POST, "cliente_id", FILTER_VALIDATE_INT) ?: 0;
+    $observaciones = trim((string)($_POST["observaciones"] ?? ($_POST["detalle"] ?? "")));
 
     $itemsRaw = $_POST["items"] ?? null;
     if ($itemsRaw && is_string($itemsRaw)) {
@@ -33,6 +34,7 @@ if (!is_array($datosJson)) {
     $clienteTelefono = trim((string)($datosJson["cliente_telefono"] ?? ""));
     $clienteDireccion = trim((string)($datosJson["cliente_direccion"] ?? ""));
     $clienteId = (int) ($datosJson["cliente_id"] ?? 0);
+    $observaciones = trim((string)($datosJson["observaciones"] ?? ($datosJson["detalle"] ?? "")));
     $items = $datosJson["items"] ?? [];
 
     if (empty($items) && isset($datosJson["producto_id"])) {
@@ -261,6 +263,8 @@ try {
         "cliente_nombre" => $clienteNombre,
         "cliente_telefono" => $clienteTelefono,
         "cliente_direccion" => $clienteDireccion,
+        "observaciones" => $observaciones,
+        "detalle" => $observaciones,
         "estado" => "ACTIVA",
         "fecha" => $fechaActual
     ];
@@ -282,6 +286,8 @@ try {
         "cliente_nombre" => $clienteNombre,
         "cliente_telefono" => $clienteTelefono,
         "cliente_direccion" => $clienteDireccion,
+        "observaciones" => $observaciones,
+        "detalle" => $observaciones,
         "fecha" => $fechaActual
     ];
     $firestore->guardarDocumento("detalle_ventas", (string)$ventaId, $detalleDoc);

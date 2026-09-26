@@ -17,8 +17,23 @@ if ($esEdicion) {
     }
 }
 
-// Cargar categorías para los selectores
-$categorias = $firestore->obtenerTodos("categorias");
+// Cargar productos existentes para obtener stock y datos de las bolsas de 3 kg y 1.5 kg
+$todosLosProductos = $firestore->obtenerColeccion("productos");
+$producto3kg = null;
+$producto1_5kg = null;
+
+foreach ($todosLosProductos as $p) {
+    $pNom = mb_strtolower((string)($p["nombre"] ?? ""));
+    if (!$producto3kg && (str_contains($pNom, "3 kg") || str_contains($pNom, "3kg") || str_contains($pNom, "3 k"))) {
+        $producto3kg = $p;
+    }
+    if (!$producto1_5kg && (str_contains($pNom, "1.5 kg") || str_contains($pNom, "1.5kg") || str_contains($pNom, "1,5 kg") || str_contains($pNom, "1,5kg") || str_contains($pNom, "1.5k"))) {
+        $producto1_5kg = $p;
+    }
+}
+
+// Cargar categorías
+$categorias = $firestore->obtenerColeccion("categorias");
 usort($categorias, fn($a, $b) => strcasecmp($a["nombre"] ?? "", $b["nombre"] ?? ""));
 
 $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . ($_SESSION["usuario_apellido"] ?? ""));
@@ -28,12 +43,60 @@ $csrf = tokenCsrf();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $esEdicion ? "Editar Presentación #{$id}" : "Ingreso de Hielo a Cámara" ?> | Control Stock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title><?= $esEdicion ? "Editar Presentación #{$id}" : "Ingreso de Producción a Cámara" ?> | Control Stock Hielo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="assets/estilos.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        .card-produccion-hielo {
+            background: #ffffff;
+            border: 2px solid #bae6fd;
+            border-radius: 18px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.06);
+        }
+        .card-produccion-hielo:hover {
+            border-color: #0284c7;
+            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12);
+        }
+        .icono-bolsa-hielo {
+            width: 58px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: #ffffff;
+            font-size: 1.8rem;
+        }
+        .qty-prod-stepper {
+            height: 48px;
+            font-size: 1.35rem;
+            font-weight: 800;
+            text-align: center;
+            border-radius: 10px;
+        }
+        .btn-stepper-prod {
+            width: 48px;
+            height: 48px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+        .btn-quick-add {
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 4px 10px;
+        }
+    </style>
 </head>
 <body data-rol="admin" data-csrf="<?= htmlspecialchars($csrf, ENT_QUOTES, "UTF-8") ?>">
     <!-- Barra Superior -->
@@ -44,12 +107,14 @@ $csrf = tokenCsrf();
                 <span class="fw-bold">Control Stock Hielo</span>
             </a>
             <div class="d-flex align-items-center gap-2 ms-auto">
-                <a href="admin.php" class="btn btn-outline-secondary btn-sm">← Volver al Panel</a>
+                <a href="admin.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-left"></i> <span>Volver al Panel</span>
+                </a>
             </div>
         </div>
     </nav>
 
-    <main class="container py-4">
+    <main class="container py-3 py-md-4">
         <?php if ($esEdicion): ?>
         <!-- ============================================================== -->
         <!-- MODO EDICIÓN INDIVIDUAL DE PRESENTACIÓN EXISTENTE              -->
@@ -59,7 +124,7 @@ $csrf = tokenCsrf();
                 <!-- Encabezado -->
                 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                     <div>
-                        <a href="admin.php" class="text-decoration-none text-muted small">← Volver a Inventario</a>
+                        <a href="admin.php" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Volver a Inventario</a>
                         <h1 class="h3 fw-bold mt-1 mb-0">Editar Presentación #<?= $id ?></h1>
                         <p class="text-muted small mb-0">Modificación de precios, empaque, código y stock en cámara de frío.</p>
                     </div>
@@ -79,7 +144,7 @@ $csrf = tokenCsrf();
                         <div class="row g-3">
                             <div class="col-12 col-md-8">
                                 <label for="prodNombre" class="form-label fw-bold">Nombre / Presentación de Hielo *</label>
-                                <input type="text" class="form-control" id="prodNombre" name="nombre" value="<?= htmlspecialchars($producto['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: Bolsa de Hielo en Cubos 2kg" required>
+                                <input type="text" class="form-control" id="prodNombre" name="nombre" value="<?= htmlspecialchars($producto['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: Bolsa de Hielo 3 kg" required>
                             </div>
 
                             <div class="col-12 col-md-4">
@@ -98,40 +163,11 @@ $csrf = tokenCsrf();
                                     <?php endforeach; ?>
                                 </select>
                                 <input type="hidden" id="prodCategoriaNombre" name="categoria_nombre" value="<?= htmlspecialchars($producto['categoria_nombre'] ?? $producto['categoria'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                <div class="mt-1">
-                                    <a href="categorias.php" target="_blank" class="small text-decoration-none">Gestionar categorías</a>
-                                </div>
                             </div>
 
                             <div class="col-12">
                                 <label for="prodDescripcion" class="form-label">Descripción Comercial</label>
-                                <textarea class="form-control" id="prodDescripcion" name="descripcion" rows="3" placeholder="Ej: Bolsa de polietileno de alta densidad 2kg, cubos macizos de agua purificada y filtrada."><?= htmlspecialchars($producto['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                            </div>
-
-                            <!-- Foto de la Presentación -->
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Foto o Imagen de la Bolsa</label>
-                                <div class="p-3 border rounded-3 bg-light">
-                                    <div class="row align-items-center g-3">
-                                        <div class="col-12 col-md-3 text-center">
-                                            <div id="previewFotoContenedor" class="border rounded-3 bg-white p-2 d-flex align-items-center justify-content-center" style="height: 120px; overflow: hidden;">
-                                                <?php if (!empty($producto['imagen_url'])): ?>
-                                                    <img id="imgPreview" src="<?= htmlspecialchars($producto['imagen_url'], ENT_QUOTES, 'UTF-8') ?>" alt="Foto" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                                                <?php else: ?>
-                                                    <span id="imgPlaceholder" class="text-muted small">Sin imagen</span>
-                                                    <img id="imgPreview" src="" alt="Foto" class="d-none" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-md-9">
-                                            <label for="prodImagenArchivo" class="form-label small text-muted">Subir imagen desde el dispositivo (JPG, PNG, WebP)</label>
-                                            <input type="file" class="form-control form-control-sm mb-2" id="prodImagenArchivo" name="imagen_archivo" accept="image/*">
-                                            
-                                            <label for="prodImagenUrl" class="form-label small text-muted">O ingresar enlace / URL de imagen web</label>
-                                            <input type="url" class="form-control form-control-sm" id="prodImagenUrl" name="imagen_url" value="<?= htmlspecialchars($producto['imagen_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="https://ejemplo.com/foto.jpg">
-                                        </div>
-                                    </div>
-                                </div>
+                                <textarea class="form-control" id="prodDescripcion" name="descripcion" rows="2" placeholder="Ej: Bolsa de hielo en cubos macizos de agua purificada."><?= htmlspecialchars($producto['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -141,38 +177,35 @@ $csrf = tokenCsrf();
                         <h2 class="h5 fw-bold text-primary mb-3">2. Identificación y Código de Barras</h2>
                         <div class="row g-3">
                             <div class="col-12">
-                                <label for="prodCodigoBarras" class="form-label">Código de Barras de la Bolsa (EAN-13 / CODE128)</label>
+                                <label for="prodCodigoBarras" class="form-label">Código de Barras de la Bolsa (EAN-13)</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control font-monospace" id="prodCodigoBarras" name="codigo_barras" value="<?= htmlspecialchars($producto['codigo_barras'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej: 2001234567890">
                                     <button class="btn btn-outline-secondary" type="button" id="btnEscanearCb" title="Escanear con cámara">Escanear</button>
                                     <button class="btn btn-outline-secondary" type="button" id="btnGenerarCb" title="Generar código aleatorio">Generar</button>
                                 </div>
-                                <small class="text-muted">Utilizado por los escáneres en el mostrador del Punto de Venta.</small>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. Precios y Finanzas -->
+                    <!-- 3. Precios -->
                     <div class="seccion-card mb-4">
-                        <h2 class="h5 fw-bold text-primary mb-3">3. Precios y Márgenes</h2>
+                        <h2 class="h5 fw-bold text-primary mb-3">3. Precios y Finanzas</h2>
                         <div class="p-3 bg-light rounded-3 border mb-3">
                             <div class="row g-3">
                                 <div class="col-12 col-md-5">
                                     <label for="prodPrecioCosto" class="form-label fw-bold">Costo de Fabricación / Bolsa ($) *</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" step="0.01" min="0" class="form-control fw-bold" id="prodPrecioCosto" name="precio_costo" value="<?= htmlspecialchars((string)($producto['precio_costo'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" placeholder="0.00" required>
+                                        <input type="number" step="0.01" min="0" class="form-control fw-bold" id="prodPrecioCosto" name="precio_costo" value="<?= htmlspecialchars((string)($producto['precio_costo'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" required>
                                     </div>
-                                    <small class="text-muted">Costo unitario de agua, energía, bolsa y packaging.</small>
                                 </div>
 
                                 <div class="col-12 col-md-5">
                                     <label for="prodPrecioVenta" class="form-label fw-bold text-success">Precio de Venta ($) *</label>
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="number" step="0.01" min="0.01" class="form-control fw-bold text-success fs-5" id="prodPrecioVenta" name="precio_venta" value="<?= htmlspecialchars((string)($producto['precio_venta'] ?? $producto['precio'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" placeholder="0.00" required>
+                                        <input type="number" step="0.01" min="0.01" class="form-control fw-bold text-success fs-5" id="prodPrecioVenta" name="precio_venta" value="<?= htmlspecialchars((string)($producto['precio_venta'] ?? $producto['precio'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" required>
                                     </div>
-                                    <small class="text-muted">Precio final al público / comercio.</small>
                                 </div>
 
                                 <div class="col-12 col-md-2 d-flex flex-column justify-content-center text-center">
@@ -183,62 +216,17 @@ $csrf = tokenCsrf();
                         </div>
                     </div>
 
-                    <!-- 4. Stock, Presentación y Empaque -->
+                    <!-- 4. Stock -->
                     <div class="seccion-card mb-4">
-                        <h2 class="h5 fw-bold text-primary mb-3">4. Inventario en Cámara y Empaque</h2>
+                        <h2 class="h5 fw-bold text-primary mb-3">4. Stock en Cámara</h2>
                         <div class="row g-3">
-                            <div class="col-12 col-md-4">
-                                <label for="prodPresentacion" class="form-label">Tipo de Empaque</label>
-                                <select class="form-select" id="prodPresentacion" name="presentacion">
-                                    <option value="unidad" <?= (!isset($producto['presentacion']) || $producto['presentacion'] === 'unidad') ? 'selected' : '' ?>>Bolsa individual (Unidad)</option>
-                                    <option value="caja" <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'caja') ? 'selected' : '' ?>>Caja</option>
-                                    <option value="bulto" <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'bulto') ? 'selected' : '' ?>>Bulto / Pack cerrado</option>
-                                </select>
+                            <div class="col-12 col-md-6">
+                                <label for="prodStock" class="form-label fw-bold">Stock Actual en Cámara (Bolsas) *</label>
+                                <input type="number" min="0" class="form-control form-control-lg fw-bold" id="prodStock" name="stock" value="<?= htmlspecialchars((string)($producto['stock'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" required>
                             </div>
-
-                            <div class="col-12 col-md-4 <?= (isset($producto['presentacion']) && ($producto['presentacion'] === 'caja' || $producto['presentacion'] === 'bulto')) ? '' : 'd-none' ?>" id="contenedorUnidadesBulto">
-                                <label for="prodUnidadesBulto" class="form-label">Bolsas por caja/pack</label>
-                                <input type="number" min="1" class="form-control" id="prodUnidadesBulto" name="unidades_por_bulto" value="<?= htmlspecialchars((string)($producto['unidades_por_bulto'] ?? 1), ENT_QUOTES, 'UTF-8') ?>">
-                            </div>
-
-                            <div class="col-12 col-md-4">
-                                <label for="prodStock" class="form-label fw-bold">Stock en Cámara (Bolsas) *</label>
-                                <input type="number" min="0" class="form-control" id="prodStock" name="stock" value="<?= htmlspecialchars((string)($producto['stock'] ?? 0), ENT_QUOTES, 'UTF-8') ?>" required>
-                                <small class="text-muted">Cantidad total de bolsas disponibles en cámara.</small>
-                            </div>
-
-                            <div class="col-12">
-                                <label for="prodNumeroFactura" class="form-label">N° Remito / Comprobante de Producción</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="prodNumeroFactura" name="numero_factura" placeholder="Ej: REM-0001-12345678">
-                                    <div class="input-group-text">
-                                        <input class="form-check-input mt-0 me-1" type="checkbox" id="prodSinFactura" name="sin_factura">
-                                        <label class="form-check-label small" for="prodSinFactura">Sin comprobante</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12" id="contenedorPermiteVentaUnidad">
-                                <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <label class="form-check-label fw-bold d-block text-dark" for="prodPermiteVentaUnidad">
-                                            ¿Se puede vender por bolsa suelta / fraccionada?
-                                        </label>
-                                        <small class="text-muted d-block" id="textoAyudaPermiteUnidad">
-                                            <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'unidad') 
-                                                ? 'Las bolsas individuales se venden por unidad suelta.' 
-                                                : 'Si está desactivado, el Punto de Venta obligará a vender únicamente en presentación empaquetada (Caja/Bulto).' ?>
-                                        </small>
-                                    </div>
-                                    <div class="form-check form-switch m-0">
-                                        <input class="form-check-input fs-4" type="checkbox" role="switch" id="prodPermiteVentaUnidad" name="permite_venta_unidad" value="1" <?= (!isset($producto['permite_venta_unidad']) || $producto['permite_venta_unidad'] ? 'checked' : '') ?> <?= (isset($producto['presentacion']) && $producto['presentacion'] === 'unidad') ? 'disabled' : '' ?>>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
+                            <div class="col-12 col-md-6">
                                 <label for="prodMotivo" class="form-label small text-muted">Motivo del Ajuste (para auditoría)</label>
-                                <input type="text" class="form-control form-control-sm" id="prodMotivo" name="motivo" value="Ajuste / reposición de cámara">
+                                <input type="text" class="form-control" id="prodMotivo" name="motivo" value="Ajuste de inventario en cámara">
                             </div>
                         </div>
                     </div>
@@ -256,14 +244,13 @@ $csrf = tokenCsrf();
 
         <?php else: ?>
         <!-- ============================================================== -->
-        <!-- MODO UNIFICADO DE INGRESO DE HIELO A CÁMARA (1 A 50 ÍTEMS)     -->
+        <!-- MODO UNIFICADO DE PRODUCCIÓN DE HIELO: 3 KG Y 1.5 KG           -->
         <!-- ============================================================== -->
-        <!-- Encabezado -->
         <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
             <div>
-                <a href="admin.php" class="text-decoration-none text-muted small">← Volver al Inventario</a>
-                <h1 class="h3 fw-bold mt-1 mb-0">Ingreso de Producción a Cámara</h1>
-                <p class="text-muted small mb-0">Alta rápida individual o por lote de bolsas de hielo.</p>
+                <a href="admin.php" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Volver al Inventario</a>
+                <h1 class="h3 fw-bold mt-1 mb-0">🧊 Ingreso Rápido de Producción de Hielo</h1>
+                <p class="text-muted small mb-0">Registro simplificado y directo a cámara de frío para las <strong>bolsas de 3 kg y 1.5 kg</strong>.</p>
             </div>
         </div>
 
@@ -271,266 +258,297 @@ $csrf = tokenCsrf();
         <div id="alertaError" class="alert alert-danger d-none mb-3" role="alert"></div>
         <div id="alertaExito" class="alert alert-success d-none mb-3" role="alert"></div>
 
-        <!-- 1. Comprobante de Entrada -->
-        <div class="seccion-card mb-4">
-            <h2 class="h5 fw-bold text-primary mb-3">1. Comprobante / Parte de Producción</h2>
-            <div class="p-3 bg-light rounded-3 border">
-                <div class="row g-3 align-items-center">
-                    <div class="col-12 col-md-8">
-                        <label class="form-label fw-bold" for="masivoNumeroFactura">N° Remito / Lote de Producción</label>
-                        <input type="text" class="form-control" id="masivoNumeroFactura" placeholder="Ej: PROD-2026-001 o REM-000123">
-                    </div>
+        <form id="formProduccionUnificada">
+            <!-- 1. Comprobante / Datos de la Producción -->
+            <div class="seccion-card mb-4">
+                <h2 class="h5 fw-bold text-primary mb-3"><i class="bi bi-file-earmark-text me-1"></i> 1. Comprobante y Turno de Fabricación</h2>
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold" for="prodLote">N° Remito / Lote de Producción</label>
+                            <input type="text" class="form-control" id="prodLote" name="lote" value="PROD-<?= date('Ymd-His') ?>" placeholder="Ej: PROD-2026-001 o REM-00123">
+                        </div>
 
-                    <div class="col-12 col-md-4 d-flex align-items-center pt-md-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="masivoSinFactura">
-                            <label class="form-check-label small" for="masivoSinFactura">Ingreso sin comprobante</label>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold" for="prodMotivoIngreso">Turno / Motivo de Producción</label>
+                            <input type="text" class="form-control" id="prodMotivoIngreso" name="motivo" value="Producción Diaria de Fábrica" placeholder="Ej: Turno Mañana / Reposición de Cámara">
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 2. Tabla Dinámica de Presentaciones a Ingresar -->
-        <div class="seccion-card mb-4">
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                <div>
-                    <h2 class="h5 fw-bold text-primary mb-0">2. Presentaciones a Registrar</h2>
-                    <small class="text-muted">Carga rápida de bolsas de hielo (hasta 50 filas).</small>
-                </div>
-                <button type="button" class="btn btn-outline-primary fw-bold" id="btnAgregarFila">
-                    + Añadir fila
-                </button>
-            </div>
-
-            <div class="table-responsive border rounded-3 mb-3 bg-white" style="min-height: 200px;">
-                <table class="table table-bordered table-hover align-middle mb-0 tabla-ingreso-compacta" id="tablaMasiva">
-                    <thead class="table-light small text-muted text-uppercase text-nowrap" style="font-size: 0.75rem;">
-                        <tr>
-                            <th style="width: 28px;" class="text-center">#</th>
-                            <th style="min-width: 150px;">Nombre / Presentación *</th>
-                            <th style="min-width: 120px;">Categoría</th>
-                            <th style="min-width: 130px;">Código de Barras</th>
-                            <th style="min-width: 100px;">Empaque</th>
-                            <th style="width: 75px;" class="text-center">Vta. Unid</th>
-                            <th style="width: 80px;">Bolsas *</th>
-                            <th style="width: 85px;">Costo ($)</th>
-                            <th style="width: 90px;">Venta ($) *</th>
-                            <th style="width: 35px;" class="text-center"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="cuerpoFilasMasivas"></tbody>
-                </table>
-            </div>
-
-            <!-- Resumen Financiero del Ingreso -->
-            <div class="p-3 bg-light rounded-3 border mb-3">
-                <div class="row text-center g-3">
-                    <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Presentaciones a registrar</span>
-                        <strong class="fs-5 text-dark" id="resumenTotalProd">0</strong>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Bolsas físicas totales</span>
-                        <strong class="fs-5 text-dark" id="resumenTotalUnidades">0 un.</strong>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <span class="text-muted small d-block">Valor de venta estimado en cámara</span>
-                        <strong class="fs-5 text-success" id="resumenValorTotal">$ 0,00</strong>
+            <!-- 2. Tarjetas Directas de Producción: 3 KG y 1.5 KG -->
+            <div class="seccion-card mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h5 fw-bold text-primary mb-0"><i class="bi bi-box-seam me-1"></i> 2. Cantidad de Bolsas Producidas</h2>
+                        <small class="text-muted">Ingresá cuántas bolsas se fabricaron hoy para sumarlas automáticamente al stock.</small>
                     </div>
                 </div>
+
+                <div class="row g-4">
+                    <!-- PRODUCTO 1: BOLSA DE 3 KG -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card-produccion-hielo p-3 p-md-4 h-100">
+                            <div class="d-flex align-items-center gap-3 mb-3 pb-2 border-bottom">
+                                <div class="icono-bolsa-hielo">🧊</div>
+                                <div>
+                                    <span class="badge bg-primary text-white fw-bold mb-1">PRESENTACIÓN PRINCIPAL</span>
+                                    <h3 class="h5 fw-bold text-dark mb-0">Bolsa de Hielo 3 kg</h3>
+                                    <small class="text-muted">
+                                        Stock actual en cámara: <strong class="text-primary fs-6" id="stockActual3kg"><?= (int)($producto3kg['stock'] ?? 0) ?></strong> bolsas
+                                    </small>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="prod_id_3kg" value="<?= (int)($producto3kg['id'] ?? 0) ?>">
+                            <input type="hidden" name="prod_nombre_3kg" value="<?= htmlspecialchars($producto3kg['nombre'] ?? 'Bolsa de Hielo 3 kg', ENT_QUOTES, 'UTF-8') ?>">
+
+                            <!-- Cantidad Producida -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Bolsas Producidas a Sumar *</label>
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant3kg', -10)">-10</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant3kg', -1)">-</button>
+                                    <input type="number" min="0" class="form-control qty-prod-stepper text-primary" id="cant3kg" name="cant_3kg" value="0" placeholder="0">
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant3kg', 1)">+</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant3kg', 10)">+10</button>
+                                </div>
+
+                                <!-- Botones de Suma Rápida -->
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add" onclick="sumarCantidadProd('cant3kg', 25)">+25</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add" onclick="sumarCantidadProd('cant3kg', 50)">+50</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add" onclick="sumarCantidadProd('cant3kg', 100)">+100</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add" onclick="sumarCantidadProd('cant3kg', 200)">+200</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add" onclick="sumarCantidadProd('cant3kg', 500)">+500</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-quick-add ms-auto" onclick="document.getElementById('cant3kg').value=0; recalcularResumenProduccion();">0</button>
+                                </div>
+                            </div>
+
+                            <!-- Precios 3kg -->
+                            <div class="row g-2 pt-2 border-top">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1">Costo Unit. ($)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="costo3kg" name="costo_3kg" value="<?= htmlspecialchars((string)($producto3kg['precio_costo'] ?? 450), ENT_QUOTES, 'UTF-8') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-success fw-bold mb-1">Venta Unit. ($)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control fw-bold text-success" id="venta3kg" name="venta_3kg" value="<?= htmlspecialchars((string)($producto3kg['precio_venta'] ?? $producto3kg['precio'] ?? 1200), ENT_QUOTES, 'UTF-8') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PRODUCTO 2: BOLSA DE 1.5 KG -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card-produccion-hielo p-3 p-md-4 h-100">
+                            <div class="d-flex align-items-center gap-3 mb-3 pb-2 border-bottom">
+                                <div class="icono-bolsa-hielo" style="background: linear-gradient(135deg, #0284c7, #06b6d4);">🧊</div>
+                                <div>
+                                    <span class="badge bg-info text-dark fw-bold mb-1">PRESENTACIÓN CHICA</span>
+                                    <h3 class="h5 fw-bold text-dark mb-0">Bolsa de Hielo 1.5 kg</h3>
+                                    <small class="text-muted">
+                                        Stock actual en cámara: <strong class="text-info fs-6" id="stockActual1_5kg"><?= (int)($producto1_5kg['stock'] ?? 0) ?></strong> bolsas
+                                    </small>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="prod_id_1_5kg" value="<?= (int)($producto1_5kg['id'] ?? 0) ?>">
+                            <input type="hidden" name="prod_nombre_1_5kg" value="<?= htmlspecialchars($producto1_5kg['nombre'] ?? 'Bolsa de Hielo 1.5 kg', ENT_QUOTES, 'UTF-8') ?>">
+
+                            <!-- Cantidad Producida -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark">Bolsas Producidas a Sumar *</label>
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant1_5kg', -10)">-10</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant1_5kg', -1)">-</button>
+                                    <input type="number" min="0" class="form-control qty-prod-stepper text-info" id="cant1_5kg" name="cant_1_5kg" value="0" placeholder="0">
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant1_5kg', 1)">+</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-stepper-prod" onclick="modificarCantidadProd('cant1_5kg', 10)">+10</button>
+                                </div>
+
+                                <!-- Botones de Suma Rápida -->
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-quick-add" onclick="sumarCantidadProd('cant1_5kg', 25)">+25</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-quick-add" onclick="sumarCantidadProd('cant1_5kg', 50)">+50</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-quick-add" onclick="sumarCantidadProd('cant1_5kg', 100)">+100</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-quick-add" onclick="sumarCantidadProd('cant1_5kg', 200)">+200</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info btn-quick-add" onclick="sumarCantidadProd('cant1_5kg', 500)">+500</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-quick-add ms-auto" onclick="document.getElementById('cant1_5kg').value=0; recalcularResumenProduccion();">0</button>
+                                </div>
+                            </div>
+
+                            <!-- Precios 1.5kg -->
+                            <div class="row g-2 pt-2 border-top">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1">Costo Unit. ($)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="costo1_5kg" name="costo_1_5kg" value="<?= htmlspecialchars((string)($producto1_5kg['precio_costo'] ?? 250), ENT_QUOTES, 'UTF-8') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-success fw-bold mb-1">Venta Unit. ($)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" class="form-control fw-bold text-success" id="venta1_5kg" name="venta_1_5kg" value="<?= htmlspecialchars((string)($producto1_5kg['precio_venta'] ?? $producto1_5kg['precio'] ?? 700), ENT_QUOTES, 'UTF-8') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Botones Guardar -->
-            <div class="d-flex justify-content-between align-items-center pt-2">
-                <a href="admin.php" class="btn btn-outline-secondary">Cancelar</a>
-                <button type="button" class="btn btn-success px-4 py-3 fs-5 fw-bold shadow" id="btnGuardarLote">
-                    Guardar Ingreso a Cámara
-                </button>
+            <!-- Resumen y Confirmación de Producción -->
+            <div class="seccion-card mb-4 bg-light border">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-md-6 text-center text-md-start">
+                        <span class="text-muted small d-block">Total de bolsas a ingresar hoy:</span>
+                        <strong class="fs-3 text-primary" id="resumenTotalBolsasProduccion">0 bolsas</strong>
+                    </div>
+                    <div class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end gap-2">
+                        <a href="admin.php" class="btn btn-outline-secondary btn-lg px-3">Cancelar</a>
+                        <button type="submit" class="btn btn-success btn-lg px-4 py-3 fw-bold fs-5 shadow d-flex align-items-center gap-2" id="btnGuardarProduccion">
+                            <i class="bi bi-check-circle-fill fs-4"></i> <span>Registrar Producción a Cámara</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
+        </form>
+
         <?php endif; ?>
     </main>
-
-    <!-- Modal Escáner Cámara Standalone -->
-    <div class="modal fade" id="modalScannerCamara" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title fs-5 fw-bold">Escanear Código de Barras</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <div id="contenedorLectorCamara" class="p-2 mb-3">
-                        <div id="qr-reader"></div>
-                    </div>
-                    <div id="scannerResultado" class="alert alert-info d-none mb-0 py-2 small"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const esEdicion = <?= $esEdicion ? "true" : "false" ?>;
-        const categoriasDisponibles = <?= json_encode($categorias, JSON_UNESCAPED_UNICODE) ?>;
-        const formatoMoneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
         const csrfToken = document.body.dataset.csrf;
+        const formatoMoneda = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
-        // Escáner Cámara Global
-        let html5Qr = null;
-        let callbackScanActivo = null;
-        const modalScan = new bootstrap.Modal(document.getElementById("modalScannerCamara"));
-
-        function abrirCamara(cb) {
-            callbackScanActivo = cb;
-            modalScan.show();
-            setTimeout(() => {
-                if (html5Qr) html5Qr.clear().catch(() => {});
-                html5Qr = new Html5Qrcode("qr-reader");
-                html5Qr.start(
-                    { facingMode: "environment" },
-                    { fps: 15, qrbox: { width: 250, height: 150 } },
-                    (decodedText) => {
-                        html5Qr.stop().then(() => {
-                            html5Qr.clear();
-                            html5Qr = null;
-                        });
-                        modalScan.hide();
-                        if (callbackScanActivo) callbackScanActivo(decodedText);
-                    },
-                    () => {}
-                ).catch(err => {
-                    const res = document.getElementById("scannerResultado");
-                    res.textContent = "Error al abrir cámara: " + err;
-                    res.classList.remove("d-none");
-                });
-            }, 300);
+        function modificarCantidadProd(inputId, delta) {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            let val = Math.max(0, (parseInt(el.value) || 0) + delta);
+            el.value = val;
+            recalcularResumenProduccion();
         }
 
-        document.getElementById("modalScannerCamara").addEventListener("hidden.bs.modal", () => {
-            if (html5Qr) {
-                html5Qr.stop().then(() => {
-                    html5Qr.clear();
-                    html5Qr = null;
-                }).catch(() => {});
+        function sumarCantidadProd(inputId, add) {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            let val = Math.max(0, (parseInt(el.value) || 0) + add);
+            el.value = val;
+            recalcularResumenProduccion();
+        }
+
+        function recalcularResumenProduccion() {
+            const cant3 = parseInt(document.getElementById("cant3kg")?.value) || 0;
+            const cant15 = parseInt(document.getElementById("cant1_5kg")?.value) || 0;
+            const total = cant3 + cant15;
+            const lbl = document.getElementById("resumenTotalBolsasProduccion");
+            if (lbl) {
+                lbl.textContent = `${total} bolsa${total !== 1 ? 's' : ''}`;
             }
-        });
+        }
 
-        if (esEdicion) {
-            // ==========================================
-            // LÓGICA DE EDICIÓN INDIVIDUAL
-            // ==========================================
-            const inputCosto = document.getElementById("prodPrecioCosto");
-            const inputVenta = document.getElementById("prodPrecioVenta");
-            const lblMargen = document.getElementById("lblMargenBruto");
+        if (!esEdicion) {
+            document.getElementById("cant3kg")?.addEventListener("input", recalcularResumenProduccion);
+            document.getElementById("cant1_5kg")?.addEventListener("input", recalcularResumenProduccion);
 
-            function recalcularMargen() {
-                const costo = parseFloat(inputCosto.value) || 0;
-                const venta = parseFloat(inputVenta.value) || 0;
-                if (costo > 0 && venta > 0) {
-                    const margen = ((venta - costo) / costo) * 100;
-                    lblMargen.textContent = (margen >= 0 ? "+" : "") + margen.toFixed(1) + "%";
-                    lblMargen.className = margen >= 0 ? "fw-bold fs-5 text-success" : "fw-bold fs-5 text-danger";
-                } else {
-                    lblMargen.textContent = "0%";
-                    lblMargen.className = "fw-bold fs-5 text-muted";
-                }
-            }
+            // Manejador de Guardar Producción Unificada
+            const formProd = document.getElementById("formProduccionUnificada");
+            if (formProd) {
+                formProd.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const alertErr = document.getElementById("alertaError");
+                    const alertOk = document.getElementById("alertaExito");
+                    const btn = document.getElementById("btnGuardarProduccion");
 
-            inputCosto.addEventListener("input", recalcularMargen);
-            inputVenta.addEventListener("input", recalcularMargen);
-            recalcularMargen();
+                    alertErr.classList.add("d-none");
+                    alertOk.classList.add("d-none");
 
-            const selCat = document.getElementById("prodCategoria");
-            const inputCatNombre = document.getElementById("prodCategoriaNombre");
-            selCat.addEventListener("change", () => {
-                const opt = selCat.selectedOptions[0];
-                inputCatNombre.value = (opt && opt.dataset.nombre) ? opt.dataset.nombre : "";
-            });
+                    const cant3 = parseInt(document.getElementById("cant3kg").value) || 0;
+                    const cant15 = parseInt(document.getElementById("cant1_5kg").value) || 0;
 
-            const selPres = document.getElementById("prodPresentacion");
-            const contBulto = document.getElementById("contenedorUnidadesBulto");
-            const inputUnidBulto = document.getElementById("prodUnidadesBulto");
-            const chkPermiteUnidad = document.getElementById("prodPermiteVentaUnidad");
-            const txtAyudaPermite = document.getElementById("textoAyudaPermiteUnidad");
-
-            selPres.addEventListener("change", () => {
-                if (selPres.value === "caja" || selPres.value === "bulto") {
-                    contBulto.classList.remove("d-none");
-                    if (parseFloat(inputUnidBulto.value) <= 1) inputUnidBulto.value = selPres.value === "caja" ? 12 : 24;
-                    if (chkPermiteUnidad) chkPermiteUnidad.disabled = false;
-                    if (txtAyudaPermite) txtAyudaPermite.textContent = `Si está desactivado, el Punto de Venta obligará a vender únicamente en ${selPres.value === 'caja' ? 'cajas cerradas' : 'bultos cerrados'}.`;
-                } else {
-                    contBulto.classList.add("d-none");
-                    inputUnidBulto.value = 1;
-                    if (chkPermiteUnidad) {
-                        chkPermiteUnidad.checked = true;
-                        chkPermiteUnidad.disabled = true;
+                    if (cant3 <= 0 && cant15 <= 0) {
+                        alertErr.textContent = "Por favor ingresá una cantidad de bolsas producidas (3 kg o 1.5 kg).";
+                        alertErr.classList.remove("d-none");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
                     }
-                    if (txtAyudaPermite) txtAyudaPermite.textContent = 'Las bolsas individuales se venden por unidad suelta.';
-                }
-            });
 
-            const chkSinFactura = document.getElementById("prodSinFactura");
-            const inputFactura = document.getElementById("prodNumeroFactura");
-            chkSinFactura.addEventListener("change", () => {
-                inputFactura.disabled = chkSinFactura.checked;
-                if (chkSinFactura.checked) inputFactura.value = "";
-            });
+                    const items = [];
+                    if (cant3 > 0) {
+                        items.push({
+                            id: parseInt(document.querySelector("[name='prod_id_3kg']").value) || 0,
+                            nombre: "Bolsa de Hielo 3 kg",
+                            cantidad: cant3,
+                            precio_costo: parseFloat(document.getElementById("costo3kg").value) || 0,
+                            precio_venta: parseFloat(document.getElementById("venta3kg").value) || 0
+                        });
+                    }
+                    if (cant15 > 0) {
+                        items.push({
+                            id: parseInt(document.querySelector("[name='prod_id_1_5kg']").value) || 0,
+                            nombre: "Bolsa de Hielo 1.5 kg",
+                            cantidad: cant15,
+                            precio_costo: parseFloat(document.getElementById("costo1_5kg").value) || 0,
+                            precio_venta: parseFloat(document.getElementById("venta1_5kg").value) || 0
+                        });
+                    }
 
-            const inputImgArchivo = document.getElementById("prodImagenArchivo");
-            const inputImgUrl = document.getElementById("prodImagenUrl");
-            const imgPreview = document.getElementById("imgPreview");
-            const imgPlaceholder = document.getElementById("imgPlaceholder");
-
-            inputImgArchivo.addEventListener("change", (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        imgPreview.src = ev.target.result;
-                        imgPreview.classList.remove("d-none");
-                        if (imgPlaceholder) imgPlaceholder.classList.add("d-none");
+                    const payload = {
+                        lote: document.getElementById("prodLote").value.trim(),
+                        motivo: document.getElementById("prodMotivoIngreso").value.trim(),
+                        produccion: items
                     };
-                    reader.readAsDataURL(file);
-                }
-            });
 
-            inputImgUrl.addEventListener("input", () => {
-                const url = inputImgUrl.value.trim();
-                if (url) {
-                    imgPreview.src = url;
-                    imgPreview.classList.remove("d-none");
-                    if (imgPlaceholder) imgPlaceholder.classList.add("d-none");
-                }
-            });
+                    btn.disabled = true;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando producción...';
 
-            document.getElementById("btnGenerarCb").addEventListener("click", () => {
-                let primeros12 = "20";
-                for (let i = 0; i < 10; i++) {
-                    primeros12 += Math.floor(Math.random() * 10).toString();
-                }
-                let suma = 0;
-                for (let i = 0; i < 12; i++) {
-                    const d = parseInt(primeros12.charAt(i), 10);
-                    suma += (i % 2 === 0) ? d : d * 3;
-                }
-                const digitoControl = (10 - (suma % 10)) % 10;
-                document.getElementById("prodCodigoBarras").value = primeros12 + digitoControl;
-            });
+                    try {
+                        const resp = await fetch("guardar_produccion.php", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-Token": csrfToken
+                            },
+                            body: JSON.stringify(payload)
+                        });
 
-            document.getElementById("btnEscanearCb").addEventListener("click", () => {
-                abrirCamara((decoded) => {
-                    document.getElementById("prodCodigoBarras").value = decoded;
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok) throw new Error(data.error || "No se pudo registrar la producción.");
+
+                        alertOk.innerHTML = `<strong>¡Producción registrada con éxito!</strong> Se sumaron ${data.total_bolsas} bolsas a la cámara de frío. Redirigiendo al panel...`;
+                        alertOk.classList.remove("d-none");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+
+                        setTimeout(() => {
+                            window.location.href = "admin.php";
+                        }, 1200);
+
+                    } catch (err) {
+                        alertErr.textContent = err.message;
+                        alertErr.classList.remove("d-none");
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                    }
                 });
-            });
-
+            }
+        } else {
+            // Edición individual
             const form = document.getElementById("formProductoStandalone");
-            form.addEventListener("submit", async (e) => {
+            form?.addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const alertErr = document.getElementById("alertaError");
                 const alertOk = document.getElementById("alertaExito");
@@ -538,10 +556,7 @@ $csrf = tokenCsrf();
 
                 alertErr.classList.add("d-none");
                 alertOk.classList.add("d-none");
-
                 btnSubmit.disabled = true;
-                const originalText = btnSubmit.innerHTML;
-                btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Guardando...`;
 
                 try {
                     const formData = new FormData(form);
@@ -560,296 +575,6 @@ $csrf = tokenCsrf();
                     alertErr.textContent = err.message;
                     alertErr.classList.remove("d-none");
                     btnSubmit.disabled = false;
-                    btnSubmit.innerHTML = originalText;
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-            });
-
-        } else {
-            // ==========================================
-            // LÓGICA DE INGRESO DINÁMICO (1 A 50 ÍTEMS)
-            // ==========================================
-            const tbody = document.getElementById("cuerpoFilasMasivas");
-            const chkSinFactura = document.getElementById("masivoSinFactura");
-            const inputFactura = document.getElementById("masivoNumeroFactura");
-
-            chkSinFactura.addEventListener("change", () => {
-                inputFactura.disabled = chkSinFactura.checked;
-                if (chkSinFactura.checked) inputFactura.value = "";
-            });
-
-            function crearFila(indice) {
-                const tr = document.createElement("tr");
-
-                let optCatHtml = `<option value="">-- Categoría --</option>`;
-                categoriasDisponibles.forEach(c => {
-                    optCatHtml += `<option value="${c.id}" data-nombre="${c.nombre}">${c.nombre}</option>`;
-                });
-
-                tr.innerHTML = `
-                    <td class="text-muted small text-center p-1">${indice}</td>
-                    <td class="p-1">
-                        <input type="text" class="form-control form-control-sm masivo-nombre px-2" placeholder="Ej: Bolsa Hielo en Cubos 2kg *" required>
-                    </td>
-                    <td class="p-1">
-                        <select class="form-select form-select-sm masivo-cat px-1">
-                            ${optCatHtml}
-                        </select>
-                    </td>
-                    <td class="p-1">
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control font-monospace masivo-cb px-1" placeholder="EAN-13">
-                            <button class="btn btn-outline-secondary btn-sm btn-gen-cb px-1" type="button" title="Generar código aleatorio">Gen</button>
-                            <button class="btn btn-outline-secondary btn-sm btn-scan-cb px-1" type="button" title="Escanear con cámara">Cam</button>
-                        </div>
-                    </td>
-                    <td class="p-1">
-                        <select class="form-select form-select-sm masivo-pres px-1 mb-1">
-                            <option value="unidad">Bolsa (Unidad)</option>
-                            <option value="caja">Caja</option>
-                            <option value="bulto">Bulto / Pack</option>
-                        </select>
-                        <input type="number" min="1" class="form-control form-control-sm masivo-unid-bulto px-1 d-none" placeholder="Bolsas/pack" value="1">
-                    </td>
-                    <td class="text-center align-middle p-1">
-                        <div class="form-check form-switch d-inline-block m-0">
-                            <input class="form-check-input masivo-venta-unidad" type="checkbox" role="switch" title="¿Se puede vender por bolsa suelta?" checked disabled>
-                        </div>
-                        <small class="d-block text-muted masivo-lbl-unid" style="font-size: 0.72rem;">Sí</small>
-                    </td>
-                    <td class="p-1">
-                        <input type="number" min="0" class="form-control form-control-sm masivo-stock px-1 text-center" placeholder="0" value="0">
-                    </td>
-                    <td class="p-1">
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm masivo-costo px-1 text-end" placeholder="0.00" value="0.00">
-                    </td>
-                    <td class="p-1">
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm masivo-venta px-1 text-end" placeholder="0.00" value="0.00">
-                    </td>
-                    <td class="text-center p-1">
-                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-del-fila" title="Quitar fila">✕</button>
-                    </td>
-                `;
-
-                const selPres = tr.querySelector(".masivo-pres");
-                const inputUnid = tr.querySelector(".masivo-unid-bulto");
-                const chkVentaUnid = tr.querySelector(".masivo-venta-unidad");
-                const lblVentaUnid = tr.querySelector(".masivo-lbl-unid");
-
-                chkVentaUnid.addEventListener("change", () => {
-                    lblVentaUnid.textContent = chkVentaUnid.checked ? "Sí" : "No";
-                    lblVentaUnid.className = chkVentaUnid.checked ? "d-block text-success fw-bold" : "d-block text-danger fw-bold";
-                });
-
-                selPres.addEventListener("change", () => {
-                    if (selPres.value === "caja" || selPres.value === "bulto") {
-                        inputUnid.classList.remove("d-none");
-                        if (parseInt(inputUnid.value) <= 1) inputUnid.value = selPres.value === "caja" ? 12 : 24;
-                        chkVentaUnid.disabled = false;
-                        chkVentaUnid.checked = true;
-                        lblVentaUnid.textContent = "Sí";
-                        lblVentaUnid.className = "d-block text-success fw-bold";
-                    } else {
-                        inputUnid.classList.add("d-none");
-                        inputUnid.value = 1;
-                        chkVentaUnid.checked = true;
-                        chkVentaUnid.disabled = true;
-                        lblVentaUnid.textContent = "Sí";
-                        lblVentaUnid.className = "d-block text-muted";
-                    }
-                    recalcularResumen();
-                });
-
-                const inputCb = tr.querySelector(".masivo-cb");
-                tr.querySelector(".btn-gen-cb").addEventListener("click", () => {
-                    let primeros12 = "20";
-                    for (let i = 0; i < 10; i++) {
-                        primeros12 += Math.floor(Math.random() * 10).toString();
-                    }
-                    let suma = 0;
-                    for (let i = 0; i < 12; i++) {
-                        const d = parseInt(primeros12.charAt(i), 10);
-                        suma += (i % 2 === 0) ? d : d * 3;
-                    }
-                    const digitoControl = (10 - (suma % 10)) % 10;
-                    inputCb.value = primeros12 + digitoControl;
-                });
-                tr.querySelector(".btn-scan-cb").addEventListener("click", () => {
-                    abrirCamara((decoded) => {
-                        inputCb.value = decoded;
-                    });
-                });
-
-                tr.querySelectorAll("input, select").forEach(el => {
-                    el.addEventListener("input", recalcularResumen);
-                });
-
-                tr.querySelector(".btn-del-fila").addEventListener("click", () => {
-                    if (tbody.children.length > 1) {
-                        tr.remove();
-                        renumerarFilas();
-                        recalcularResumen();
-                    } else {
-                        tr.querySelectorAll("input").forEach(i => i.value = "");
-                        recalcularResumen();
-                    }
-                });
-
-                return tr;
-            }
-
-            function renumerarFilas() {
-                Array.from(tbody.children).forEach((tr, idx) => {
-                    tr.children[0].textContent = idx + 1;
-                });
-            }
-
-            function recalcularResumen() {
-                let totalLineas = 0;
-                let totalUnidadesFisicas = 0;
-                let valorTotalVenta = 0;
-
-                Array.from(tbody.children).forEach(tr => {
-                    const nombre = tr.querySelector(".masivo-nombre").value.trim();
-                    const stock = parseInt(tr.querySelector(".masivo-stock").value) || 0;
-                    const venta = parseFloat(tr.querySelector(".masivo-venta").value) || 0;
-                    const unidBulto = Math.max(1, parseInt(tr.querySelector(".masivo-unid-bulto").value) || 1);
-
-                    if (nombre !== "" || stock > 0 || venta > 0) {
-                        totalLineas++;
-                        const unids = stock * unidBulto;
-                        totalUnidadesFisicas += unids;
-                        valorTotalVenta += (unids * venta);
-                    }
-                });
-
-                document.getElementById("resumenTotalProd").textContent = totalLineas;
-                document.getElementById("resumenTotalUnidades").textContent = `${totalUnidadesFisicas} un.`;
-                document.getElementById("resumenValorTotal").textContent = formatoMoneda.format(valorTotalVenta);
-            }
-
-            document.getElementById("btnAgregarFila").addEventListener("click", () => {
-                if (tbody.children.length >= 50) {
-                    alert("Se ha alcanzado el límite máximo de 50 presentaciones por ingreso.");
-                    return;
-                }
-                const nueva = crearFila(tbody.children.length + 1);
-                tbody.appendChild(nueva);
-                nueva.querySelector(".masivo-nombre").focus();
-                recalcularResumen();
-            });
-
-            // Inicializar con 2 filas
-            tbody.appendChild(crearFila(1));
-            tbody.appendChild(crearFila(2));
-
-            // Guardar Lote
-            document.getElementById("btnGuardarLote").addEventListener("click", async () => {
-                const alertErr = document.getElementById("alertaError");
-                const alertOk = document.getElementById("alertaExito");
-                alertErr.classList.add("d-none");
-                alertOk.classList.add("d-none");
-
-                const numFactura = inputFactura.value.trim();
-                const sinFactura = chkSinFactura.checked;
-
-                const productosLote = [];
-                const errores = [];
-
-                Array.from(tbody.children).forEach((tr, idx) => {
-                    const num = idx + 1;
-                    const nombre = tr.querySelector(".masivo-nombre").value.trim();
-                    const selCat = tr.querySelector(".masivo-cat");
-                    const catId = selCat.value ? parseInt(selCat.value) : null;
-                    const catNom = selCat.selectedOptions[0]?.dataset?.nombre || "";
-                    const cb = tr.querySelector(".masivo-cb").value.trim();
-                    const pres = tr.querySelector(".masivo-pres").value;
-                    const chkUnid = tr.querySelector(".masivo-venta-unidad");
-                    const permiteUnid = (pres === "unidad") ? true : (chkUnid ? chkUnid.checked : true);
-                    const unidBulto = Math.max(1, parseInt(tr.querySelector(".masivo-unid-bulto").value) || 1);
-                    const stock = parseInt(tr.querySelector(".masivo-stock").value) || 0;
-                    const costo = parseFloat(tr.querySelector(".masivo-costo").value) || 0;
-                    const venta = parseFloat(tr.querySelector(".masivo-venta").value) || 0;
-
-                    if (nombre === "" && stock === 0 && venta === 0) return;
-
-                    if (nombre === "") {
-                        errores.push(`Fila #${num}: El nombre de la presentación es obligatorio.`);
-                        return;
-                    }
-                    if (venta <= 0) {
-                        errores.push(`Fila #${num} ("${nombre}"): El precio de venta debe ser mayor a 0.`);
-                        return;
-                    }
-                    if (stock < 0) {
-                        errores.push(`Fila #${num} ("${nombre}"): El stock no puede ser negativo.`);
-                        return;
-                    }
-
-                    productosLote.push({
-                        nombre: nombre,
-                        categoria_id: catId,
-                        categoria_nombre: catNom,
-                        codigo_barras: cb,
-                        presentacion: pres,
-                        permite_venta_unidad: permiteUnid,
-                        unidades_por_bulto: unidBulto,
-                        stock: stock,
-                        precio_costo: costo,
-                        precio_venta: venta,
-                        precio: venta
-                    });
-                });
-
-                if (errores.length > 0) {
-                    alertErr.innerHTML = `<strong>Atención con los siguientes datos:</strong><ul class="mb-0 mt-1">${errores.map(e => `<li>${e}</li>`).join("")}</ul>`;
-                    alertErr.classList.remove("d-none");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    return;
-                }
-
-                if (productosLote.length === 0) {
-                    alertErr.textContent = "Completá al menos una presentación para registrar el ingreso.";
-                    alertErr.classList.remove("d-none");
-                    return;
-                }
-
-                const btnSave = document.getElementById("btnGuardarLote");
-                btnSave.disabled = true;
-                btnSave.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Guardando ${productosLote.length} presentación(es)...`;
-
-                try {
-                    const resp = await fetch("guardar_productos_masivo.php", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-Token": csrfToken
-                        },
-                        body: JSON.stringify({
-                            numero_factura: numFactura,
-                            sin_factura: sinFactura,
-                            productos: productosLote
-                        })
-                    });
-
-                    const data = await resp.json().catch(() => ({}));
-                    if (!resp.ok) {
-                        throw new Error(data.error || "Error al procesar el ingreso de hielo.");
-                    }
-
-                    alertOk.innerHTML = `<strong>¡Ingreso a cámara registrado con éxito!</strong> ${data.mensaje || `Se guardaron ${data.total_guardados} presentaciones en Firestore.`}`;
-                    alertOk.classList.remove("d-none");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-
-                    setTimeout(() => {
-                        window.location.href = "admin.php";
-                    }, 1200);
-
-                } catch (err) {
-                    alertErr.textContent = err.message;
-                    alertErr.classList.remove("d-none");
-                    btnSave.disabled = false;
-                    btnSave.innerHTML = "Guardar Ingreso a Cámara";
                     window.scrollTo({ top: 0, behavior: "smooth" });
                 }
             });

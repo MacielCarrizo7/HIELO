@@ -869,6 +869,104 @@ main, .container, .container-fluid, .tab-content, .tab-pane, .seccion-card {
     background-blend-mode: overlay !important;
 }
 
+/* =======================================================
+   BARRA DE DESPLAZAMIENTO FLOTANTE ACCESIBLE (HORIZONTAL)
+   ======================================================= */
+.floating-horizontal-scrollbar {
+    position: fixed;
+    bottom: 0;
+    z-index: 1040;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 18px;
+    background: rgba(241, 245, 249, 0.95);
+    border-top: 1px solid #cbd5e1;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+    display: none;
+    border-radius: 6px 6px 0 0;
+    backdrop-filter: blur(4px);
+}
+
+.floating-horizontal-scrollbar-content {
+    height: 1px;
+    pointer-events: none;
+}
+
+.floating-horizontal-scrollbar::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar {
+    height: 12px;
+    width: 12px;
+}
+
+.floating-horizontal-scrollbar::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+}
+
+.floating-horizontal-scrollbar::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 6px;
+    border: 2px solid #f1f5f9;
+}
+
+.floating-horizontal-scrollbar::-webkit-scrollbar-thumb:hover,
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* =======================================================
+   MOBILE-FIRST ENHANCEMENTS PARA DISPOSITIVOS MÓVILES
+   ======================================================= */
+@media (max-width: 767.98px) {
+    .hero-panel {
+        padding: 1.5rem 1.25rem !important;
+        border-radius: 1rem !important;
+    }
+    
+    .hero-panel h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .login-card {
+        padding: 1.75rem 1.25rem !important;
+    }
+
+    .stat-card {
+        padding: 1rem !important;
+        border-radius: 0.85rem !important;
+    }
+
+    .stat-valor {
+        font-size: 1.5rem !important;
+    }
+
+    .seccion-card {
+        padding: 1.15rem !important;
+        border-radius: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .table {
+        font-size: 0.85rem;
+    }
+
+    .btn {
+        touch-action: manipulation;
+    }
+    
+    .app-navbar .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .card-produccion-hielo {
+        padding: 1rem !important;
+    }
+}
+
+
 
 
 
