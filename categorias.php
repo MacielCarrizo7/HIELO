@@ -39,7 +39,6 @@ $csrf = tokenCsrf();
                 <span class="fw-bold">Categorías de Hielo</span>
             </a>
             <div class="d-flex align-items-center gap-2 ms-auto">
-                <a href="catalogo.php" class="btn btn-outline-primary btn-sm">Ver Catálogo</a>
                 <a href="admin.php" class="btn btn-outline-secondary btn-sm">← Volver al Panel</a>
             </div>
         </div>

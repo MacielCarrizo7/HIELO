@@ -3189,7 +3189,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         cargarBajas(),
         cargarClientes(),
         cargarVendedores(),
-        cargarSolicitudesVendedor(),
         cargarHistorialCodigos()
     ]);
     actualizarPreviewBarcode();

@@ -41,12 +41,10 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
             </button>
             <div class="collapse navbar-collapse" id="menuVendedor">
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1 pt-3 pt-lg-0">
-                    <a class="nav-link nav-link-app active" href="vendedor.php">Panel de Ventas</a>
-                    <a class="nav-link nav-link-app" href="catalogo.php">Catálogo</a>
+                    <a class="nav-link nav-link-app active" href="vendedor.php"><i class="bi bi-house-door me-1"></i>Panel de Ventas</a>
                     <a class="nav-link nav-link-app" href="instagram_stories.php"><i class="bi bi-instagram me-1 text-danger"></i>Stories</a>
-                    <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código con cámara">Escanear</button>
-                    <a class="btn btn-primary btn-sm ms-lg-1" href="venta_form.php">Punto de Venta (POS)</a>
-                    <a class="btn btn-outline-danger btn-sm ms-lg-1" href="logout.php">Cerrar sesión</a>
+                    <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código con cámara"><i class="bi bi-qr-code-scan me-1"></i>Escanear</button>
+                    <a class="btn btn-outline-danger btn-sm ms-lg-2" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a>
                 </div>
             </div>
         </div>
@@ -129,21 +127,12 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Vendedor") . " " . ($_SE
                 <div class="seccion-card">
                     <h2 class="h5 fw-bold mb-3">Accesos Directos</h2>
                     <div class="row g-3">
-                        <div class="col-12 col-sm-6">
-                            <a class="btn btn-outline-success w-100 p-3 text-start d-flex align-items-center gap-3" href="venta_form.php">
-                                <span class="fs-3">⚡</span>
+                        <div class="col-12">
+                            <a class="btn btn-outline-success w-100 p-3 text-start d-flex align-items-center gap-3 shadow-sm" href="venta_form.php">
+                                <span class="fs-2">⚡</span>
                                 <div>
-                                    <div class="fw-bold">Punto de Venta (POS)</div>
+                                    <div class="fw-bold fs-6">Punto de Venta (POS)</div>
                                     <small class="text-muted">Carga rápida de ticket con cliente</small>
-                                </div>
-                            </a>
-                        </div>
-                        <div class="col-12 col-sm-6">
-                            <a class="btn btn-outline-info w-100 p-3 text-start d-flex align-items-center gap-3" href="catalogo.php">
-                                <span class="fs-3">❄️</span>
-                                <div>
-                                    <div class="fw-bold">Catálogo Visual de Hielo</div>
-                                    <small class="text-muted">Ver imágenes y precios de venta</small>
                                 </div>
                             </a>
                         </div>

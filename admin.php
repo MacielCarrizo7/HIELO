@@ -36,15 +36,12 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
             </button>
             <div class="collapse navbar-collapse" id="menuAdmin">
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1 pt-3 pt-lg-0">
-                    <a class="nav-link nav-link-app active" href="admin.php">Panel Principal</a>
-                    <a class="nav-link nav-link-app" href="catalogo.php">Catálogo Visual</a>
+                    <a class="nav-link nav-link-app active" href="admin.php"><i class="bi bi-house-door me-1"></i>Panel</a>
                     <a class="nav-link nav-link-app" href="instagram_stories.php"><i class="bi bi-instagram me-1 text-danger"></i>Stories</a>
-                    <a class="nav-link nav-link-app" href="categorias.php">Categorías</a>
-                    <a class="nav-link nav-link-app" href="registro.php">Usuarios</a>
-                    <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código de barras con cámara">Escanear</button>
-                    <a class="btn btn-outline-primary btn-sm ms-lg-1" href="venta_form.php">Punto de Venta</a>
-                    <a class="btn btn-primary btn-sm ms-lg-1" href="producto_form.php">+ Ingreso de Hielo</a>
-                    <a class="btn btn-outline-danger btn-sm ms-lg-2" href="logout.php">Cerrar sesión</a>
+                    <a class="nav-link nav-link-app" href="categorias.php"><i class="bi bi-tags me-1"></i>Categorías</a>
+                    <a class="nav-link nav-link-app" href="registro.php"><i class="bi bi-people me-1"></i>Usuarios</a>
+                    <button class="btn btn-outline-primary btn-sm ms-lg-2" type="button" id="btnAbrirScannerGlobal" title="Escanear código de barras con cámara"><i class="bi bi-qr-code-scan me-1"></i>Escanear</button>
+                    <a class="btn btn-outline-danger btn-sm ms-lg-2" href="logout.php"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a>
                 </div>
             </div>
         </div>
@@ -58,15 +55,18 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
             </div>
         <?php endif; ?>
 
-        <!-- Encabezado Principal -->
+        <!-- Encabezado Principal / Hero Banner -->
         <section class="hero-panel p-4 p-md-5 mb-4">
-            <div class="hero-contenido d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="hero-contenido d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div>
                     <p class="etiqueta text-white-50 mb-2">Fábrica y Distribución de Hielo</p>
                     <h1 class="display-6 fw-bold mb-2">Hola, <?= htmlspecialchars($nombreCompleto, ENT_QUOTES, "UTF-8") ?></h1>
-                    <p class="lead text-white-50 mb-0">Control de producción en cámara de frío, stock por presentación, ventas y auditoría de mermas.</p>
+                    <p class="lead text-white-50 mb-0">Control de producción en cámara de frío (3 kg y 1.5 kg), stock, ventas y auditoría.</p>
                 </div>
-                <div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="producto_form.php" class="btn btn-primary btn-lg px-4 py-3 fw-bold fs-5 shadow-lg d-inline-flex align-items-center gap-2 text-nowrap rounded-pill border border-white border-opacity-25">
+                        <span>🧊 + Ingreso de Hielo</span>
+                    </a>
                     <a href="venta_form.php" class="btn btn-success btn-lg px-4 py-3 fw-bold fs-5 shadow-lg d-inline-flex align-items-center gap-2 text-nowrap rounded-pill">
                         <i class="bi bi-cart-plus-fill fs-3"></i> <span>Registrar Venta</span>
                     </a>
@@ -139,69 +139,35 @@ $nombreCompleto = trim(($_SESSION["usuario_nombre"] ?? "Administrador") . " " . 
                     </div>
                 </div>
 
-                <!-- Bandeja de Solicitudes de Atención de Clientes -->
-                <section class="seccion-card mb-4" aria-labelledby="titulo-solicitudes">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <h2 id="titulo-solicitudes" class="h5 fw-bold mb-0">Solicitudes de Atención de Clientes</h2>
-                            <span id="badgeSolicitudesPendientes" class="badge rounded-pill text-bg-danger">0</span>
-                        </div>
-                        <small class="text-muted">Clientes que solicitaron asistencia directa</small>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Mensaje / Consulta</th>
-                                    <th>Estado</th>
-                                    <th class="text-end">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="solicitudesAtencionBody"></tbody>
-                        </table>
-                    </div>
-                </section>
-
+                <!-- Accesos y Acciones Rápidas -->
                 <div class="seccion-card">
                     <h2 class="h5 fw-bold mb-3">Accesos y Acciones Rápidas</h2>
                     <p class="texto-secundario small mb-4">Operaciones clave del sistema de gestión de hielo.</p>
                     <div class="row g-3">
-                        <div class="col-12 col-sm-6 col-lg-3">
-                            <a class="btn btn-outline-primary w-100 p-3 text-start d-flex align-items-center gap-3 h-100" href="producto_form.php">
-                                <span class="fs-3">🧊</span>
+                        <div class="col-12 col-md-4">
+                            <a class="btn btn-outline-primary w-100 p-3 text-start d-flex align-items-center gap-3 h-100 shadow-sm" href="producto_form.php">
+                                <span class="fs-2">🧊</span>
                                 <div>
-                                    <div class="fw-bold">Ingreso de Hielo</div>
-                                    <small class="text-muted">Carga individual o por lote a cámara</small>
+                                    <div class="fw-bold fs-6">Ingreso de Producción</div>
+                                    <small class="text-muted">Carga rápida a cámara (3 kg y 1.5 kg)</small>
                                 </div>
                             </a>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
-                            <a class="btn btn-outline-success w-100 p-3 text-start d-flex align-items-center gap-3 h-100" href="venta_form.php">
-                                <span class="fs-3">⚡</span>
+                        <div class="col-12 col-md-4">
+                            <a class="btn btn-outline-success w-100 p-3 text-start d-flex align-items-center gap-3 h-100 shadow-sm" href="venta_form.php">
+                                <span class="fs-2">⚡</span>
                                 <div>
-                                    <div class="fw-bold">Punto de Venta (POS)</div>
-                                    <small class="text-muted">Venta rápida con datos de cliente</small>
+                                    <div class="fw-bold fs-6">Punto de Venta (POS)</div>
+                                    <small class="text-muted">Venta rápida con cliente y ticket</small>
                                 </div>
                             </a>
                         </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
-                            <a class="btn btn-outline-info w-100 p-3 text-start d-flex align-items-center gap-3 h-100" href="catalogo.php">
-                                <span class="fs-3">❄️</span>
+                        <div class="col-12 col-md-4">
+                            <a class="btn btn-outline-warning w-100 p-3 text-start d-flex align-items-center gap-3 h-100 shadow-sm" href="registro.php">
+                                <span class="fs-2">👥</span>
                                 <div>
-                                    <div class="fw-bold">Catálogo Visual</div>
-                                    <small class="text-muted">Muestrario de presentaciones</small>
-                                </div>
-                            </a>
-                        </div>
-                        <div class="col-12 col-sm-6 col-lg-3">
-                            <a class="btn btn-outline-warning w-100 p-3 text-start d-flex align-items-center gap-3 h-100" href="registro.php">
-                                <span class="fs-3">👥</span>
-                                <div>
-                                    <div class="fw-bold">Usuarios y Permisos</div>
-                                    <small class="text-muted">Vendedores y Administradores</small>
+                                    <div class="fw-bold fs-6">Usuarios y Personal</div>
+                                    <small class="text-muted">Gestión de vendedores y accesos</small>
                                 </div>
                             </a>
                         </div>
